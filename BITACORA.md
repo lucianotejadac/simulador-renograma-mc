@@ -67,3 +67,32 @@ Las etiquetas de cada corte están en la grilla del fantoma (2 mm en el plano), 
 (`src/importar_correcciones.py`) copia los píxeles corregidos a los cortes del fantoma cuyo centro cae en el
 espesor de ese corte del CT (3.27 mm). Prueba: 40 píxeles de corteza derecha pasados a vejiga mueven 0.3 mL.
 Con `--rehacer` recalcula sensibilidades, renogramas, DICOM y página (menos de un minuto).
+
+---
+
+## 0003 · 2026-10-07 · Editor volumétrico: tres planos, lazo, máscara e interpolación
+
+**Pedido.** Cambiar de plano de corte y tener herramientas de lazo, máscara e interpolación.
+
+**Decisiones.**
+- El editor axial se reemplazó por uno volumétrico (`docs/editor3d.js`, común a paratiroides y renograma) que
+  trabaja sobre un solo volumen de etiquetas en la grilla de la simulación (2 mm), así que axial, coronal y
+  sagital editan el mismo dato. El CT de fondo es el del fantoma, codificado en 1 byte por vóxel (HU / 10) y
+  comprimido; las etiquetas también (`src/editor_datos.py`; CT 3.0 MB y etiquetas 0.3 MB). El navegador los descomprime con
+  DecompressionStream.
+- Herramientas: navegar (mueve el cruce de los tres planos), pincel, borrador, lazo para agregar o quitar,
+  relleno por densidad desde un punto (tolerancia en HU, tope de 60 000 vóxeles), máscara por rango de HU que
+  limita pincel, lazo y relleno (con rangos predefinidos: tejido blando, órgano sólido, líquido, hueso, aire,
+  grasa), interpolación entre cortes editados por distancia con signo (transformada de distancia euclídea
+  exacta), deshacer (60 pasos, Ctrl+Z), restaurar la estructura en el corte, ventanas de CT y opacidad.
+- Archivo de correcciones v2: corridas de cambios sobre el volumen aplanado; `importar_correcciones.py` lo
+  aplica directo a regiones.npz y sigue aceptando el v1.
+
+**Pruebas** (eventos de puntero simulados en Chrome sin cabeza): pincel 61 vóxeles, deshacer vuelve a cero,
+lazo en coronal 64, relleno con máscara de tejido blando en sagital 2 176, interpolación entre dos cortes a 6
+de distancia rellena los 5 intermedios (80 vóxeles); el archivo se guarda en el formato v2. Importador: 500
+vóxeles de corteza izquierda a tejido blando = 4.0 mL.
+
+**Trampa.** `setPointerCapture` lanza un error con punteros que el navegador no tiene activos (los de una
+prueba) y `focus()` desplazaba la página: el primer evento abortaba y no se pintaba nada. Ambos quedaron
+protegidos.

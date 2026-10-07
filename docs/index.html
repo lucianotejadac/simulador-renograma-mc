@@ -76,12 +76,14 @@ footer{font-size:12px;color:var(--muted);max-width:82ch}
     <div class="stage"><canvas id="ax" width="1024" height="586"></canvas><div class="hud" id="hud-ax"></div><div class="hud der">D ← → I (vista desde los pies)</div></div>
     <div class="fila"><span class="lbl">Corte</span><input type="range" id="corte" min="0" max="170" value="85" aria-label="Corte axial"><span class="tag" id="t-corte"></span></div>
     <div class="fila" id="ctl-cont"><label><input type="checkbox" id="c-todos" checked> <b>Contornos</b></label></div>
-    <div id="ctl-editor"></div>
-    <p class="tag" style="margin:0">Las correcciones se guardan en este navegador. Para que entren en la simulación, descarga el archivo y envíalo: se aplica a la grilla del fantoma y se rehacen los renogramas.</p>
+  </div>
+  <div class="card"><h2>Editor de contornos <small>axial · coronal · sagital · grilla de la simulación (2 mm)</small></h2>
+    <div id="editor3d"></div>
+    <p class="tag" style="margin:0">Rueda o flechas: cambiar de corte. Navegar: clic para mover el cruce de los tres planos. Máscara: el pincel, el lazo y el relleno solo tocan vóxeles en ese rango de HU. Interpolar: contornea una estructura en dos o más cortes del mismo plano y rellena los intermedios. Las correcciones se guardan en este navegador; para que entren en la simulación, descarga el archivo y envíalo.</p>
   </div>
   <footer>CT: caso 2 de la entrega docente de PET/CT de The Cancer Imaging Archive (anónimo, desidentificado según DICOM PS 3.15), con riñones (corteza y pelvis), vejiga, hígado, bazo, vasos e intestino contorneados con TotalSegmentator. Cinética: plasma, intersticio, corteza y pelvis de cada riñón, vejiga, hígado e intestino, con 185 MBq en bolo y furosemida a los 20 minutos en los casos que la indican. Cada compartimento se simuló por Monte Carlo una vez (posterior y anterior, colimador LEHR, 4.8 mm); los cuadros son la suma ponderada por la actividad de cada instante, con ruido de Poisson. Protocolo: 30 cuadros de 2 s y 87 de 20 s. Regiones automáticas desde la anatomía; fondo en media luna inferolateral; función relativa por la integral de 1 a 2.5 min. Código y bitácora en <a href="https://github.com/lucianotejadac/simulador-renograma-mc">github.com/lucianotejadac/simulador-renograma-mc</a> (MIT). Otros simuladores en <a href="https://lucianotejadac.github.io/">lucianotejadac.github.io</a>.</footer>
 </div>
-<script src="editor.js"></script>
+<script src="editor3d.js"></script>
 <script>
 (function(){
   var $=function(id){return document.getElementById(id);};
@@ -137,6 +139,11 @@ footer{font-size:12px;color:var(--muted);max-width:82ch}
   $('caso').addEventListener('change',function(){ cargar(this.value); try{history.replaceState(null,'','#'+this.value);}catch(e){} });
   function loop(now){ requestAnimationFrame(loop); if(last===null)last=now; if(playing&&post&&now-last>110){ last=now; frame=(frame+1)%meta.n_cuadros; $('cuadro').value=frame; dibujar(); } }
   requestAnimationFrame(loop);
+  window.editorVolumen=EditorVolumen({contenedor:$('editor3d'), base:'datos/editor/', fondo:1, clave:'renograma-3d', pagina:'simulador-renograma-mc',
+    estructuras:[{e:4,n:'Corteza renal D',c:[42,167,214]},{e:5,n:'Pelvis renal D',c:[30,90,255]},{e:6,n:'Corteza renal I',c:[224,150,42]},{e:7,n:'Pelvis renal I',c:[255,90,0]},
+      {e:8,n:'Vejiga',c:[255,235,0]},{e:9,n:'Hígado',c:[170,110,60]},{e:10,n:'Bazo',c:[200,80,200]},{e:11,n:'Vasos',c:[230,60,60]},{e:13,n:'Vesícula',c:[60,220,90]},
+      {e:12,n:'Intestino',c:[140,200,140],on:false},{e:2,n:'Hueso',c:[210,210,210],on:false},{e:1,n:'Tejido blando',c:[120,120,120],on:false}],
+    corteInicial:function(lab,Z,Y,X){ var mejor=0,k0=Math.floor(Z/2); for(var z=0;z<Z;z++){ var n=0,o=z*Y*X; for(var i=0;i<Y*X;i++){ var v=lab[o+i]; if(v>=4&&v<=7) n++; } if(n>mejor){mejor=n;k0=z;} } return k0; }});
   // ---- cortes axiales con contornos ----
   var CONT=[{e:4,n:'Corteza renal D',c:[42,167,214],on:true},{e:5,n:'Pelvis renal D',c:[30,90,255],on:true},{e:6,n:'Corteza renal I',c:[224,150,42],on:true},{e:7,n:'Pelvis renal I',c:[255,90,0],on:true},
             {e:8,n:'Vejiga',c:[255,235,0],on:true},{e:9,n:'Hígado',c:[170,110,60],on:true},{e:10,n:'Bazo',c:[200,80,200],on:true},{e:11,n:'Vasos',c:[230,60,60],on:true},
@@ -160,12 +167,6 @@ footer{font-size:12px;color:var(--muted);max-width:82ch}
   fetch('datos/cortes.json').then(function(r){return r.json();}).then(function(j){ cortes=j; $('corte').max=j.n-1; $('corte').value=j.corte_rinones;
     var f=$('ctl-cont'); CONT.forEach(function(q){ var l=document.createElement('label'); l.innerHTML='<input type="checkbox" '+(q.on?'checked':'')+'> <span style="display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;background:rgb('+q.c.join(',')+')"></span> '+q.n; l.firstChild.addEventListener('change',function(){ q.on=this.checked; dibujarCorte(); }); f.appendChild(l); });
     $('c-todos').addEventListener('change',dibujarCorte); $('corte').addEventListener('input',dibujarCorte);
-    var lienzo=$('ax');
-    ed=EditorContornos({contenedor:$('ctl-editor'), lienzo:lienzo, estructuras:CONT.filter(function(q){return q.e!==2;}), fondo:1,
-      corte:function(){return parseInt($('corte').value,10);}, etiquetas:etiquetas, redibujar:dibujarCorte, clave:'renograma-v1',
-      aEtiqueta:function(x,y){ var f=lienzo.width/lienzo.getBoundingClientRect().width; return [(x*f-vista.ox)/vista.w*vista.Lw, (y*f-vista.oy)/vista.h*vista.Lh]; },
-      escalaPx:function(){ var f=lienzo.width/lienzo.getBoundingClientRect().width; return vista.w/vista.Lw/f; },
-      meta:{pagina:'simulador-renograma-mc', grilla:'fantoma abdominal de 2 mm; un corte por corte del CT original', etiquetas_ancho:j.etiquetas_ancho, etiquetas_alto:j.etiquetas_alto, n_cortes:j.n, z_mm:j.z_mm, nombres:j.nombres}});
     dibujarCorte(); });
   fetch('datos/indice.json').then(function(r){return r.json();}).then(function(ix){ var s=$('caso'); ix.casos.forEach(function(c){ var o=document.createElement('option'); o.value=c.caso; o.textContent=NOMBRES[c.caso]||c.caso; s.appendChild(o); });
     var h=(location.hash||'').replace('#',''); var ini=ix.casos.some(function(c){return c.caso===h;})?h:ix.casos[0].caso; s.value=ini; cargar(ini); });
