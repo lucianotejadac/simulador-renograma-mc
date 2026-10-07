@@ -8,3 +8,4 @@ salida/casos/*/*.npz
 salida/dicom/
 salida_icrp/
 docs/icrp/
+salida_salival/

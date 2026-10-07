@@ -32,6 +32,18 @@ PESOS = {
 RESPALDO = {"ureter_d": "pelvis_d", "ureter_i": "pelvis_i"}   # sin uréteres segmentados (paciente TCIA), la orina en tránsito se ve en la pelvis
 MATRIZ, PIXEL_MM = 128, 4.8
 
+# El plasma y el intersticio ocupan todo el cuerpo: dentro del campo solo cae una fracción. Cada imagen por MBq de
+# esos compartimentos se escala por (volumen sanguíneo o extracelular en el campo) / (volumen corporal total) del
+# hombre de referencia (sangre 5.3 L, líquido extracelular 14 L). Sin esto, el fondo queda varias veces más alto.
+VOL_SANGRE_ML, VOL_EXTRACELULAR_ML = 5300.0, 14000.0
+
+
+def fraccion_en_campo(reg, pesos, vox_ml, total_ml):
+    a = 0.0
+    for et, w in pesos.items():
+        a += float((reg == et).sum()) * w * vox_ml
+    return min(1.0, a / total_ml)
+
 
 def mapa(reg, pesos, vox_ml):
     a = np.zeros(reg.shape, np.float32)
@@ -69,6 +81,10 @@ def main():
             t1 = time.time()
             esp, _, est = mc.simular(act, mu, hu, vox_cm, cam, n_hist=a.historias, semilla=a.semilla + 100 * i + (0 if vista == "posterior" else 50), poisson=False)
             S[f"{vista}_{comp}"] = esp[0].astype(np.float32)          # cuentas por MBq·s
+            if comp in ("plasma", "intersticio"):
+                f_ = fraccion_en_campo(reg, PESOS[comp], vox_cm ** 3, VOL_SANGRE_ML if comp == "plasma" else VOL_EXTRACELULAR_ML)
+                S[f"{vista}_{comp}"] *= f_
+                info.setdefault("fraccion_en_campo", {})[comp] = round(f_, 3)
             info["segundos"][f"{vista}_{comp}"] = round(time.time() - t1, 1)
             print(f"{vista:9s} {comp:12s}: {esp[0].sum():8.1f} cuentas por MBq·s ({time.time() - t1:4.1f} s)", flush=True)
     np.savez_compressed(os.path.join(RAIZ, SALIDA, "sensibilidades.npz"), **S)

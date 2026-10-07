@@ -126,3 +126,33 @@ protegidos.
 autorice redistribuir los datos. El código queda en el repositorio, pero los datos derivados del fantoma
 (página, cortes, volumen del editor, DICOM) quedan fuera de Pages (`docs/icrp/` en .gitignore) hasta tener
 permiso. Localmente la página funciona en docs/icrp/.
+
+---
+
+## 0005 · 2026-10-07 · Cintigrafía de glándulas salivales sobre el fantoma ICRP, y el fondo que sobraba
+
+**Pedido.** Glándulas salivales usando el fantoma ICRP 145.
+
+**Hecho.**
+- `src/salival_fantoma.py`: cabeza y cuello del hombre de referencia a 2 mm. Cada glándula salival de la
+  ICRP viene en tres piezas no conectadas: parótida (31 mL), submaxilar (10 mL) y una anterior y medial de
+  1.7 mL que por posición es la sublingual, sumada a la submaxilar porque la cámara no la separa. Total
+  85 mL, igual a la masa de referencia.
+- `src/salival_modelo.py`: pertecnetato con captación, retorno al plasma, secreción basal y estimulada
+  (limón a los 20 min durante 3 min), tiroides, boca y deglución. Calibrado: parótida 0.68 % de lo
+  inyectado a los 20 min, máximo a los 15 min, excreción 56 %; submaxilar 0.41 % y 43 %; tiroides ~1 %.
+- `src/salival_estudio.py`: Monte Carlo por compartimento (vista anterior, 128 × 128 de 3 mm), 80 cuadros
+  de 30 s, regiones por glándula y fondo en anillo, máximo, relación glándula/fondo y fracción de
+  excreción; DICOM y página local en docs/icrp/salival/.
+- Casos: normal, Sjögren, litiasis de la parótida derecha, daño tras radioyodo y submaxilar izquierda
+  ausente. Medido / verdad (excreción): parótida normal 52 / 56 %, litiasis 1.5 / 0 %, Sjögren 10–18 / 19 %.
+
+**Trampa (también en el renograma).** Las imágenes de plasma e intersticio se normalizaban para que toda la
+actividad de esos compartimentos cayera dentro del campo, pero ocupan todo el cuerpo. En la cabeza el fondo
+quedaba varias veces más alto y la glándula era solo el 22 % de las cuentas de su región: la excreción medida
+salía 20 % donde la verdad era 56 %. Ahora cada una se escala por la fracción del volumen sanguíneo (5.3 L) o
+extracelular (14 L) del hombre de referencia que cae en el campo. En el tronco esa fracción es 0.44 y 0.29:
+el renograma tenía 2 a 3 veces más fondo del real. Rehecho: función reducida 68.8/31.2 (antes 66.4/33.6, verdad
+70.2/29.8) y riñón no funcionante 4.2 % (antes 9.4 %).
+
+**Publicación.** Código público; datos del fantoma ICRP solo locales (salida_salival/ y docs/icrp/ en .gitignore).

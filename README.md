@@ -65,3 +65,8 @@ aplica a la grilla del fantoma y rehace la simulación.
 145, paquete de archivos electrónicos de la ICRP; ruta en ICRP145_DIR), que trae uréteres; luego los mismos
 pasos con RENO_PACIENTE=icrp generan casos con patología ureteral. Los datos derivados no se publican hasta
 obtener permiso de la ICRP para redistribuirlos.
+
+## Glándulas salivales (fantoma ICRP 145, local)
+
+`python src/salival_fantoma.py` (cabeza y cuello del fantoma), `python src/salival_estudio.py` (Monte Carlo,
+cinco casos con estímulo ácido, DICOM y página en docs/icrp/salival/). Modelo en `src/salival_modelo.py`.
