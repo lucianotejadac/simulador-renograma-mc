@@ -1,0 +1,31 @@
+{
+  "ct": "C:\\Users\\lucia\\Downloads\\PET CT\\ENTREGA PET\\PET Magdalena\\Caso 2\\CT",
+  "iso_mm": 2.0,
+  "forma_zyx": [
+    280,
+    143,
+    250
+  ],
+  "origen_mm": [
+    -250.0,
+    -150.39067599999998,
+    -997.150024
+  ],
+  "recorte_indices": [
+    3,
+    174,
+    9,
+    302,
+    0,
+    512
+  ],
+  "ct_espaciado_mm": [
+    3.270004,
+    0.976562,
+    0.976562
+  ],
+  "z_sup": -440.0,
+  "z_inf": -1000.0,
+  "sexo": "M",
+  "edad": "062Y"
+}

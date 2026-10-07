@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+.pytest_cache/
+scratch/
+salida/*.npz
+salida/totalseg/*.nii.gz
+salida/casos/*/*.npz
+salida/dicom/

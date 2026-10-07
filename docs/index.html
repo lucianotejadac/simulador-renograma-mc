@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Renograma MAG3 simulado</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#eef1f0;--panel:#fff;--ink:#16201d;--muted:#5d6b66;--line:#d2dbd8;--accent:#1f7a5c;--accent-ink:#fff;--soft:#dcefe7;--d:#2aa7d6;--i:#e0962a;
+  --body:"IBM Plex Sans",system-ui,sans-serif;--disp:"IBM Plex Sans Condensed","Arial Narrow",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0f1513;--panel:#17201d;--ink:#e3ece8;--muted:#93a39d;--line:#2a3733;--accent:#4cc29a;--accent-ink:#04140e;--soft:#16302a}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0f1513;--panel:#17201d;--ink:#e3ece8;--muted:#93a39d;--line:#2a3733;--accent:#4cc29a;--accent-ink:#04140e;--soft:#16302a}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:18px 40px;display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px}
+h1{font-family:var(--disp);font-weight:600;font-size:26px;margin:0}
+.tag{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.note{background:var(--soft);border-left:3px solid var(--accent);padding:8px 12px;border-radius:0 6px 6px 0;max-width:78ch;margin:0}
+.bar,.fila{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.bar{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.lbl{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+button{font:500 13px var(--body);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+select{font:13px var(--body);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+input[type=range]{accent-color:var(--accent);flex:1 1 160px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:10px;align-content:start}
+.card h2{font-family:var(--disp);font-weight:600;font-size:16px;margin:0;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.card h2 small{font:400 11px var(--mono);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.stage{background:#000;border-radius:6px;overflow:hidden;position:relative;max-width:100%}
+.stage canvas{display:block;width:100%;height:auto}
+.hud{position:absolute;left:10px;top:8px;font-family:var(--mono);font-size:12px;color:#eaf5f0;text-shadow:0 1px 2px #000;pointer-events:none}
+.hud.der{left:auto;right:10px}
+.mini{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.mini figure{margin:0;display:grid;gap:2px}.mini canvas{width:100%;height:auto;background:#000;border-radius:4px}
+.mini figcaption{font:11px var(--mono);color:var(--muted);text-align:center}
+svg.chart{width:100%;height:auto;display:block}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th{font:500 11px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
+td{padding:5px 6px;border-bottom:1px solid var(--line)}td.n{text-align:right;font-family:var(--mono)}
+.verdad{display:none}.mostrar .verdad{display:table-cell}
+.caja{display:none;background:var(--soft);border-radius:6px;padding:8px 12px}.mostrar .caja{display:block}
+.sw{display:inline-block;width:12px;height:3px;vertical-align:middle;margin-right:5px}
+a{color:var(--accent)}
+footer{font-size:12px;color:var(--muted);max-width:82ch}
+</style>
+</head>
+<body>
+<div class="wrap" id="raiz">
+  <header><h1>Renograma con MAG3 simulado</h1><span class="tag">Tc-99m MAG3 · planar dinámico posterior · Monte Carlo sobre un CT real · verdad conocida</span></header>
+  <p class="note">Cinco renogramas de 30 minutos sobre el mismo paciente (CT público de TCIA): la física de la cámara (atenuación, dispersión, colimador, ruido) se simuló fotón a fotón y la cinética del MAG3 con un modelo de compartimentos. Analiza el estudio, interpreta la curva y recién después pide la verdad.</p>
+  <div class="bar">
+    <span class="lbl">Caso</span><select id="caso" aria-label="Caso"></select>
+    <button id="verdad">Mostrar la verdad</button>
+    <label><input type="checkbox" id="ver-rois" checked> Regiones de interés</label>
+    <a id="zip" href="#" download>Descargar DICOM (posterior y anterior)</a>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>Cuadros dinámicos <small>vista posterior · 128 × 128 · 4.8 mm</small></h2>
+      <div class="stage"><canvas id="cine" width="512" height="512"></canvas><div class="hud" id="hud"></div><div class="hud der">D ← → I (posterior)</div></div>
+      <div class="fila"><button id="play" class="primary">Pausar</button><input type="range" id="cuadro" min="0" max="116" value="0" aria-label="Cuadro"><span class="tag" id="t-cuadro"></span></div>
+      <div class="fila"><span class="lbl">Mostrar</span><select id="modo"><option value="cuadro">cuadro individual</option><option value="min" selected>suma de 1 minuto</option></select><span class="lbl">Brillo</span><input type="range" id="brillo" min="30" max="300" value="100" aria-label="Brillo"></div>
+      <div class="mini" id="mini"></div>
+    </div>
+    <div class="card"><h2>Renograma <small>regiones corregidas por fondo · cuentas/s</small></h2>
+      <svg class="chart" id="chart" viewBox="0 0 520 280" role="img" aria-label="Curvas renales"></svg>
+      <div class="fila tag"><span><span class="sw" style="background:var(--d)"></span>riñón derecho</span><span><span class="sw" style="background:var(--i)"></span>riñón izquierdo</span><span class="caja" style="padding:0 6px">línea punteada: curva verdadera (escalada al máximo medido)</span></div>
+      <table><thead><tr><th>parámetro</th><th class="n">derecho</th><th class="n">izquierdo</th><th class="n verdad">verdad D</th><th class="n verdad">verdad I</th></tr></thead><tbody id="tabla"></tbody></table>
+      <div class="caja" id="caja-verdad"></div>
+    </div>
+  </div>
+  <footer>CT: caso 2 de la entrega docente de PET/CT de The Cancer Imaging Archive (anónimo, desidentificado según DICOM PS 3.15), con riñones (corteza y pelvis), vejiga, hígado, bazo, vasos e intestino contorneados con TotalSegmentator. Cinética: plasma, intersticio, corteza y pelvis de cada riñón, vejiga, hígado e intestino, con 185 MBq en bolo y furosemida a los 20 minutos en los casos que la indican. Cada compartimento se simuló por Monte Carlo una vez (posterior y anterior, colimador LEHR, 4.8 mm); los cuadros son la suma ponderada por la actividad de cada instante, con ruido de Poisson. Protocolo: 30 cuadros de 2 s y 87 de 20 s. Regiones automáticas desde la anatomía; fondo en media luna inferolateral; función relativa por la integral de 1 a 2.5 min. Código y bitácora en <a href="https://github.com/lucianotejadac/simulador-renograma-mc">github.com/lucianotejadac/simulador-renograma-mc</a> (MIT). Otros simuladores en <a href="https://lucianotejadac.github.io/">lucianotejadac.github.io</a>.</footer>
+</div>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var NOMBRES={"normal":"Caso 1","funcion-reducida-izq":"Caso 2","obstruccion-der":"Caso 3","dilatacion-der":"Caso 4","no-funcionante-izq":"Caso 5"};
+  var N=128, meta=null, post=null, frame=0, playing=true, last=null, verdad=false, rois={};
+  var cine=$('cine').getContext('2d');
+  function cargar(c){
+    $('zip').href='dicom/'+c+'.zip'; post=null;
+    Promise.all([fetch('datos/'+c+'/meta.json').then(function(r){return r.json();}), fetch('datos/'+c+'/post.bin').then(function(r){return r.arrayBuffer();})]).then(function(r){
+      meta=r[0]; post=new Uint16Array(r[1]); rois={};
+      Object.keys(meta.rois_indices).forEach(function(k){ var m=new Uint8Array(N*N); meta.rois_indices[k].forEach(function(i){m[i]=1;}); rois[k]=m; });
+      $('cuadro').max=meta.n_cuadros-1; frame=0; tabla(); grafico(); miniaturas(); dibujar();
+    });
+  }
+  function tFin(i){ var s=0; for(var k=0;k<=i;k++) s+=meta.duraciones_s[k]; return s; }
+  function imagen(desde,hasta){ var acc=new Float32Array(N*N); for(var f=desde;f<=hasta;f++){ var o=f*N*N; for(var i=0;i<N*N;i++) acc[i]+=post[o+i]; } return acc; }
+  function rango(i){ if($('modo').value==='cuadro') return [i,i]; var t=tFin(i), a=i; while(a>0&&tFin(a-1)>t-60) a--; return [a,i]; }
+  function pintar(ctx,acc,W,conRois){
+    var mx=0, v=[]; for(var i=0;i<acc.length;i++) if(acc[i]>0) v.push(acc[i]); v.sort(function(a,b){return a-b;}); mx=v.length?v[Math.floor(v.length*0.995)]:1;
+    var b=$('brillo').value/100, img=ctx.createImageData(N,N);
+    for(var y=0;y<N;y++) for(var x=0;x<N;x++){ var s=y*N+x, g=Math.min(255,acc[s]/mx*255*b), p=((N-1-y)*N+x)*4; img.data[p]=g; img.data[p+1]=g; img.data[p+2]=g; img.data[p+3]=255;
+      if(conRois){ var col=null; ['derecho','izquierdo'].forEach(function(l){ var r=rois[l]; if(r&&r[s]&&(!r[s-1]||!r[s+1]||!r[s-N]||!r[s+N])) col=l==='derecho'?[42,167,214]:[224,150,42]; var f=rois['fondo_'+l]; if(f&&f[s]&&!col) col=l==='derecho'?[20,90,120]:[120,80,20]; }); if(col){ img.data[p]=col[0]; img.data[p+1]=col[1]; img.data[p+2]=col[2]; } } }
+    var t=document.createElement('canvas'); t.width=N; t.height=N; t.getContext('2d').putImageData(img,0,0); ctx.imageSmoothingEnabled=true; ctx.drawImage(t,0,0,W,W);
+  }
+  function dibujar(){ if(!post) return; var r=rango(frame); pintar(cine,imagen(r[0],r[1]),512,$('ver-rois').checked);
+    var t=tFin(frame); $('hud').textContent=(r[0]===r[1]?'cuadro '+(frame+1):'cuadros '+(r[0]+1)+'–'+(r[1]+1))+' · '+Math.floor(t/60)+':'+String(Math.round(t%60)).padStart(2,'0')+' min'+(meta.parametros.t_furosemida_min!==null&&t/60>=meta.parametros.t_furosemida_min?' · furosemida':'');
+    $('t-cuadro').textContent=(t/60).toFixed(1)+' min'; grafico(); }
+  function miniaturas(){ var m=$('mini'); m.innerHTML=''; [[0,60,'0–1 min'],[60,120,'1–2'],[120,180,'2–3'],[240,300,'4–5'],[540,600,'9–10'],[840,900,'14–15'],[1140,1200,'19–20'],[1740,1800,'29–30']].forEach(function(q){
+      var a=-1,b=-1; for(var i=0;i<meta.n_cuadros;i++){ var t=tFin(i); if(t>q[0]&&t<=q[1]){ if(a<0)a=i; b=i; } }
+      var fig=document.createElement('figure'), c=document.createElement('canvas'); c.width=192; c.height=192; fig.appendChild(c); var cap=document.createElement('figcaption'); cap.textContent=q[2]; fig.appendChild(cap); m.appendChild(fig);
+      if(a>=0) pintar(c.getContext('2d'),imagen(a,b),192,false); }); }
+  function grafico(){ if(!meta) return; var W=520,H=280,m={l:52,r:14,t:12,b:34}, tc=meta.t_centro_s, d=meta.curvas_medidas.derecho, iz=meta.curvas_medidas.izquierdo;
+    var ymax=Math.max.apply(null,d.concat(iz))*1.1||1, x=function(t){return m.l+(W-m.l-m.r)*t/1800;}, y=function(v){return m.t+(H-m.t-m.b)*(1-Math.max(0,v)/ymax);};
+    var o='', paso=ymax>400?100:(ymax>100?25:10);
+    for(var v=0;v<=ymax;v+=paso*Math.ceil(ymax/paso/6)){ o+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="'+(m.l-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" font-family="IBM Plex Mono,monospace" fill="var(--muted)">'+Math.round(v)+'</text>'; }
+    for(var mm=0;mm<=30;mm+=5){ o+='<text x="'+x(mm*60)+'" y="'+(H-14)+'" text-anchor="middle" font-size="11" font-family="IBM Plex Mono,monospace" fill="var(--muted)">'+mm+'</text>'; }
+    o+='<text x="'+(W-m.r)+'" y="'+(H-2)+'" text-anchor="end" font-size="10" font-family="IBM Plex Mono,monospace" fill="var(--muted)">minutos</text>';
+    var tf=meta.parametros.t_furosemida_min; if(tf!==null){ o+='<line x1="'+x(tf*60)+'" x2="'+x(tf*60)+'" y1="'+m.t+'" y2="'+(H-m.b)+'" stroke="var(--accent)" stroke-dasharray="4 3"/><text x="'+(x(tf*60)+4)+'" y="'+(m.t+12)+'" font-size="11" fill="var(--accent)">furosemida</text>'; }
+    function linea(vals,col,dash){ var s=''; for(var i=0;i<vals.length;i++) s+=(i?'L':'M')+x(tc[i]).toFixed(1)+' '+y(vals[i]).toFixed(1)+' '; return '<path d="'+s+'" fill="none" stroke="'+col+'" stroke-width="2"'+(dash?' stroke-dasharray="5 4" opacity="0.8"':'')+'/>'; }
+    o+=linea(d,'var(--d)')+linea(iz,'var(--i)');
+    if(verdad){ var cv=meta.curvas_verdaderas_MBq, ts=cv.t_s; [['corteza_d','pelvis_d',d,'var(--d)'],['corteza_i','pelvis_i',iz,'var(--i)']].forEach(function(q){ var s=cv[q[0]].map(function(v,i){return v+cv[q[1]][i];}), mx=Math.max.apply(null,s), mm2=Math.max.apply(null,q[2]); if(mx<=0) return; var p=''; for(var i=0;i<ts.length;i++) p+=(i?'L':'M')+x(ts[i]).toFixed(1)+' '+y(s[i]/mx*mm2).toFixed(1)+' '; o+='<path d="'+p+'" fill="none" stroke="'+q[3]+'" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.85"/>'; }); }
+    var tt=tFin(frame); o+='<line x1="'+x(tt)+'" x2="'+x(tt)+'" y1="'+m.t+'" y2="'+(H-m.b)+'" stroke="var(--muted)" stroke-width="1"/>';
+    $('chart').innerHTML=o; }
+  function f(v,suf){ return v===null||v===undefined?'—':v+(suf||''); }
+  function tabla(){ var md=meta.medidos, ve=meta.verdad;
+    var filas=[['Función relativa','funcion_relativa',' %'],['Tiempo al máximo','tmax_min',' min'],['T½ tras el máximo','t_medio_min',' min'],['C20 / máximo','c20_sobre_max','']];
+    $('tabla').innerHTML=filas.map(function(q){ return '<tr><td>'+q[0]+'</td><td class="n">'+f(md.derecho[q[1]],q[2])+'</td><td class="n">'+f(md.izquierdo[q[1]],q[2])+'</td><td class="n verdad">'+f(ve.derecho[q[1]],q[2])+'</td><td class="n verdad">'+f(ve.izquierdo[q[1]],q[2])+'</td></tr>'; }).join('');
+    var p=meta.parametros; $('caja-verdad').innerHTML='<b>Verdad:</b> '+meta.descripcion+' Extracción (1/min): D '+p.derecho.k+', I '+p.izquierdo.k+'; tránsito cortical D '+p.derecho.tc+' / I '+p.izquierdo.tc+' min; vaciamiento pélvico D '+p.derecho.tp+' / I '+p.izquierdo.tp+' min'+(p.t_furosemida_min!==null?'; furosemida a los '+p.t_furosemida_min+' min':'')+'. Lo medido difiere de la verdad por el ruido, el fondo y la superposición de tejidos, igual que en un estudio real.'; }
+  $('verdad').addEventListener('click',function(){ verdad=!verdad; this.textContent=verdad?'Ocultar la verdad':'Mostrar la verdad'; $('raiz').classList.toggle('mostrar',verdad); grafico(); });
+  $('ver-rois').addEventListener('change',dibujar); $('modo').addEventListener('change',dibujar); $('brillo').addEventListener('input',function(){dibujar();miniaturas();});
+  $('cuadro').addEventListener('input',function(){ frame=parseInt(this.value,10); playing=false; $('play').textContent='Reproducir'; dibujar(); });
+  $('play').addEventListener('click',function(){ playing=!playing; this.textContent=playing?'Pausar':'Reproducir'; });
+  $('caso').addEventListener('change',function(){ cargar(this.value); try{history.replaceState(null,'','#'+this.value);}catch(e){} });
+  function loop(now){ requestAnimationFrame(loop); if(last===null)last=now; if(playing&&post&&now-last>110){ last=now; frame=(frame+1)%meta.n_cuadros; $('cuadro').value=frame; dibujar(); } }
+  requestAnimationFrame(loop);
+  fetch('datos/indice.json').then(function(r){return r.json();}).then(function(ix){ var s=$('caso'); ix.casos.forEach(function(c){ var o=document.createElement('option'); o.value=c.caso; o.textContent=NOMBRES[c.caso]||c.caso; s.appendChild(o); });
+    var h=(location.hash||'').replace('#',''); var ini=ix.casos.some(function(c){return c.caso===h;})?h:ix.casos[0].caso; s.value=ini; cargar(ini); });
+})();
+</script>
+</body>
+</html>

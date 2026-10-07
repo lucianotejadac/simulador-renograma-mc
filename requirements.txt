@@ -1,0 +1,7 @@
+numpy
+scipy
+pydicom
+pillow
+nibabel
+numba==0.61.2
+pytest

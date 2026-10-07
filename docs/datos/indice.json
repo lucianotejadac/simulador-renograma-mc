@@ -1,0 +1,24 @@
+{
+ "casos": [
+  {
+   "caso": "normal",
+   "zip_mb": 1.6
+  },
+  {
+   "caso": "funcion-reducida-izq",
+   "zip_mb": 1.7
+  },
+  {
+   "caso": "obstruccion-der",
+   "zip_mb": 1.6
+  },
+  {
+   "caso": "dilatacion-der",
+   "zip_mb": 1.6
+  },
+  {
+   "caso": "no-funcionante-izq",
+   "zip_mb": 1.7
+  }
+ ]
+}
