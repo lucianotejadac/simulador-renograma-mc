@@ -51,3 +51,9 @@ pasan el Control de aplicaciones de Windows).
 
 Detalles, calibración y trampas en [BITACORA.md](BITACORA.md). Código MIT; los DICOM llevan paciente
 sintético `SIM-RENO-nn` y conservan la anatomía de un paciente anónimo de TCIA.
+
+## Editar contornos
+
+En la página, «Editar contornos» bajo el corte axial: pincel, borrador, deshacer y copiar del corte vecino.
+Las correcciones se descargan como JSON; `python src/importar_correcciones.py archivo.json --rehacer` las
+aplica a la grilla del fantoma y rehace la simulación.

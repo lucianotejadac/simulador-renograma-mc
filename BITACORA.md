@@ -57,3 +57,13 @@ original del abdomen (0.98 mm, ventana 40/400) y las etiquetas de regiones del m
 en total, se cargan corte a corte). La página dibuja el borde de cada estructura con un interruptor por
 estructura y abre en el corte de los hilios. Revisado a ojo: pelvis en el hilio de cada riñón, cava a la
 derecha y aorta a la izquierda delante de la columna.
+
+---
+
+## 0002 · 2026-10-07 · Editor de contornos en la página
+
+Mismo editor que simulador-paratiroides-mc (BITACORA 0005 de ese repo), sobre los cortes del CT original.
+Las etiquetas de cada corte están en la grilla del fantoma (2 mm en el plano), así que el importador
+(`src/importar_correcciones.py`) copia los píxeles corregidos a los cortes del fantoma cuyo centro cae en el
+espesor de ese corte del CT (3.27 mm). Prueba: 40 píxeles de corteza derecha pasados a vejiga mueven 0.3 mL.
+Con `--rehacer` recalcula sensibilidades, renogramas, DICOM y página (menos de un minuto).
