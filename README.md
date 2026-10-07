@@ -24,6 +24,7 @@ Página con los cinco casos (cine, regiones de interés, renograma, verdad ocult
    integrada en ese cuadro, con ruido de Poisson. Regiones automáticas desde la anatomía, fondo en media luna,
    y los parámetros clínicos medidos como en la práctica.
 6. `src/exportar.py`: DICOM NM dinámico (dos fases: 30 × 2 s y 87 × 20 s) y datos de la página.
+7. `src/cortes_web.py`: cortes axiales del CT original con los contornos, para la página.
 
 ```bash
 python src/fantoma.py

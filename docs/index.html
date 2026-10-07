@@ -72,6 +72,11 @@ footer{font-size:12px;color:var(--muted);max-width:82ch}
       <div class="caja" id="caja-verdad"></div>
     </div>
   </div>
+  <div class="card"><h2>Cortes axiales del CT con contornos <small>CT original 0.98 mm · contornos de TotalSegmentator</small></h2>
+    <div class="stage"><canvas id="ax" width="1024" height="586"></canvas><div class="hud" id="hud-ax"></div><div class="hud der">D ← → I (vista desde los pies)</div></div>
+    <div class="fila"><span class="lbl">Corte</span><input type="range" id="corte" min="0" max="170" value="85" aria-label="Corte axial"><span class="tag" id="t-corte"></span></div>
+    <div class="fila" id="ctl-cont"><label><input type="checkbox" id="c-todos" checked> <b>Contornos</b></label></div>
+  </div>
   <footer>CT: caso 2 de la entrega docente de PET/CT de The Cancer Imaging Archive (anónimo, desidentificado según DICOM PS 3.15), con riñones (corteza y pelvis), vejiga, hígado, bazo, vasos e intestino contorneados con TotalSegmentator. Cinética: plasma, intersticio, corteza y pelvis de cada riñón, vejiga, hígado e intestino, con 185 MBq en bolo y furosemida a los 20 minutos en los casos que la indican. Cada compartimento se simuló por Monte Carlo una vez (posterior y anterior, colimador LEHR, 4.8 mm); los cuadros son la suma ponderada por la actividad de cada instante, con ruido de Poisson. Protocolo: 30 cuadros de 2 s y 87 de 20 s. Regiones automáticas desde la anatomía; fondo en media luna inferolateral; función relativa por la integral de 1 a 2.5 min. Código y bitácora en <a href="https://github.com/lucianotejadac/simulador-renograma-mc">github.com/lucianotejadac/simulador-renograma-mc</a> (MIT). Otros simuladores en <a href="https://lucianotejadac.github.io/">lucianotejadac.github.io</a>.</footer>
 </div>
 <script>
@@ -129,6 +134,29 @@ footer{font-size:12px;color:var(--muted);max-width:82ch}
   $('caso').addEventListener('change',function(){ cargar(this.value); try{history.replaceState(null,'','#'+this.value);}catch(e){} });
   function loop(now){ requestAnimationFrame(loop); if(last===null)last=now; if(playing&&post&&now-last>110){ last=now; frame=(frame+1)%meta.n_cuadros; $('cuadro').value=frame; dibujar(); } }
   requestAnimationFrame(loop);
+  // ---- cortes axiales con contornos ----
+  var CONT=[{e:4,n:'Corteza renal D',c:[42,167,214],on:true},{e:5,n:'Pelvis renal D',c:[30,90,255],on:true},{e:6,n:'Corteza renal I',c:[224,150,42],on:true},{e:7,n:'Pelvis renal I',c:[255,90,0],on:true},
+            {e:8,n:'Vejiga',c:[255,235,0],on:true},{e:9,n:'Hígado',c:[170,110,60],on:true},{e:10,n:'Bazo',c:[200,80,200],on:true},{e:11,n:'Vasos',c:[230,60,60],on:true},
+            {e:13,n:'Vesícula',c:[60,220,90],on:false},{e:12,n:'Intestino',c:[140,200,140],on:false},{e:2,n:'Hueso',c:[210,210,210],on:false}];
+  var cortes=null, ax=$('ax').getContext('2d'), cacheCT={}, cacheEt={}, corteAct=-1;
+  function cargarImg(url){ return new Promise(function(ok,mal){ var im=new Image(); im.onload=function(){ok(im);}; im.onerror=mal; im.src=url; }); }
+  function pad(k){ return ('00'+k).slice(-3); }
+  function etiquetas(k){ if(cacheEt[k]) return Promise.resolve(cacheEt[k]); return cargarImg('datos/etiquetas/'+pad(k)+'.png').then(function(im){ var c=document.createElement('canvas'); c.width=im.width; c.height=im.height; var x=c.getContext('2d'); x.drawImage(im,0,0); var d=x.getImageData(0,0,im.width,im.height).data, e=new Uint8Array(im.width*im.height); for(var i=0;i<e.length;i++) e[i]=d[4*i]; cacheEt[k]={w:im.width,h:im.height,e:e}; return cacheEt[k]; }); }
+  function contornos(L){ var w=L.w*2, h=L.h*2, c=document.createElement('canvas'); c.width=w; c.height=h; var x=c.getContext('2d'), img=x.createImageData(w,h), d=img.data, col={};
+    if($('c-todos').checked) CONT.forEach(function(q){ if(q.on) col[q.e]=q.c; });
+    function et(yy,xx){ if(yy<0||xx<0||yy>=h||xx>=w) return 0; return L.e[(yy>>1)*L.w+(xx>>1)]; }
+    for(var yy=0;yy<h;yy++) for(var xx=0;xx<w;xx++){ var e=et(yy,xx), cc=col[e]; if(!cc) continue; if(et(yy-1,xx)!==e||et(yy+1,xx)!==e||et(yy,xx-1)!==e||et(yy,xx+1)!==e){ var p=(yy*w+xx)*4; d[p]=cc[0]; d[p+1]=cc[1]; d[p+2]=cc[2]; d[p+3]=255; } }
+    x.putImageData(img,0,0); return c; }
+  function dibujarCorte(){ if(!cortes) return; var k=parseInt($('corte').value,10); corteAct=k;
+    var pct=cacheCT[k]?Promise.resolve(cacheCT[k]):cargarImg('datos/ct/'+pad(k)+'.png').then(function(im){cacheCT[k]=im; return im;});
+    Promise.all([pct, etiquetas(k)]).then(function(r){ if(k!==corteAct) return; var W=$('ax').width, H=$('ax').height; ax.fillStyle='#000'; ax.fillRect(0,0,W,H);
+      var esc=Math.min(W/cortes.ancho, H/cortes.alto), w=cortes.ancho*esc, h=cortes.alto*esc, ox=(W-w)/2, oy=(H-h)/2;
+      ax.imageSmoothingEnabled=true; ax.drawImage(r[0],ox,oy,w,h); ax.imageSmoothingEnabled=false; ax.drawImage(contornos(r[1]),ox,oy,w,h); ax.imageSmoothingEnabled=true;
+      $('hud-ax').textContent='corte '+(k+1)+' de '+cortes.n+' · z = '+cortes.z_mm[k]+' mm'; $('t-corte').textContent=((cortes.z_mm[k]-cortes.z_mm[cortes.corte_rinones])/10).toFixed(1)+' cm desde los hilios'; });
+    [k-1,k+1].forEach(function(j){ if(j>=0&&j<cortes.n&&!cacheCT[j]) cargarImg('datos/ct/'+pad(j)+'.png').then(function(im){cacheCT[j]=im;}); }); }
+  fetch('datos/cortes.json').then(function(r){return r.json();}).then(function(j){ cortes=j; $('corte').max=j.n-1; $('corte').value=j.corte_rinones;
+    var f=$('ctl-cont'); CONT.forEach(function(q){ var l=document.createElement('label'); l.innerHTML='<input type="checkbox" '+(q.on?'checked':'')+'> <span style="display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;background:rgb('+q.c.join(',')+')"></span> '+q.n; l.firstChild.addEventListener('change',function(){ q.on=this.checked; dibujarCorte(); }); f.appendChild(l); });
+    $('c-todos').addEventListener('change',dibujarCorte); $('corte').addEventListener('input',dibujarCorte); dibujarCorte(); });
   fetch('datos/indice.json').then(function(r){return r.json();}).then(function(ix){ var s=$('caso'); ix.casos.forEach(function(c){ var o=document.createElement('option'); o.value=c.caso; o.textContent=NOMBRES[c.caso]||c.caso; s.appendChild(o); });
     var h=(location.hash||'').replace('#',''); var ini=ix.casos.some(function(c){return c.caso===h;})?h:ix.casos[0].caso; s.value=ini; cargar(ini); });
 })();

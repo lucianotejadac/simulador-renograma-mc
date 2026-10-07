@@ -51,3 +51,9 @@ práctica. La diferencia entre medido y verdad es docente: muestra cuánto pesan
 
 **Abierto.** Uréteres (hoy la pelvis vacía directo a la vejiga), media geométrica con la vista anterior en
 la página, regiones dibujadas por el estudiante, Patlak-Rutland, y validación contra SIMIND.
+
+**Agregado (mismo día): cortes axiales con contornos.** `src/cortes_web.py` exporta los 171 cortes del CT
+original del abdomen (0.98 mm, ventana 40/400) y las etiquetas de regiones del mismo corte como PNG (8.6 MB
+en total, se cargan corte a corte). La página dibuja el borde de cada estructura con un interruptor por
+estructura y abre en el corte de los hilios. Revisado a ojo: pelvis en el hilio de cada riñón, cava a la
+derecha y aorta a la izquierda delante de la columna.
