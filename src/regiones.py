@@ -5,7 +5,8 @@ misma grilla). Usa el ejecutable indicado en la variable TOTALSEG_EXE o el del e
 
 Etiquetas: 0 aire, 1 tejido blando, 2 hueso, 3 gas/pulmón, 4 corteza renal derecha, 5 pelvis renal derecha,
 6 corteza renal izquierda, 7 pelvis renal izquierda, 8 vejiga, 9 hígado, 10 bazo, 11 vasos (aorta, cava,
-ilíacas, corazón), 12 intestino (duodeno, delgado, colon, estómago), 13 vesícula.
+ilíacas, corazón), 12 intestino (duodeno, delgado, colon, estómago), 13 vesícula, 14/15 uréter derecho/izquierdo (solo en el
+fantoma ICRP 145; TotalSegmentator no los segmenta).
 
 Pelvis renal: dentro de cada riñón, los vóxeles de densidad de orina (−10 a 18 HU) del lado medial (hilio). En CT
 sin contraste un sistema colector normal no se distingue: si da menos de 2 mL se usa una pelvis geométrica
@@ -22,9 +23,11 @@ import nibabel as nib
 import numpy as np
 from scipy import ndimage
 
+from paciente import SALIDA, DOCS_DATOS, DOCS_DICOM  # noqa: E402
+
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NOMBRES = ["aire", "tejido blando", "hueso", "gas/pulmón", "corteza renal derecha", "pelvis renal derecha", "corteza renal izquierda",
-           "pelvis renal izquierda", "vejiga", "hígado", "bazo", "vasos", "intestino", "vesícula"]
+           "pelvis renal izquierda", "vejiga", "hígado", "bazo", "vasos", "intestino", "vesícula", "uréter derecho", "uréter izquierdo"]
 ESTRUCTURAS = ["kidney_left", "kidney_right", "urinary_bladder", "liver", "spleen", "gallbladder", "stomach", "pancreas", "duodenum",
                "small_bowel", "colon", "aorta", "inferior_vena_cava", "heart", "iliac_artery_left", "iliac_artery_right",
                "iliac_vena_left", "iliac_vena_right", "adrenal_gland_left", "adrenal_gland_right",
@@ -71,9 +74,9 @@ def pelvis(rinon, hu, iso, lado_medial):
 
 
 def main():
-    f = np.load(os.path.join(RAIZ, "salida", "fantoma.npz"))
+    f = np.load(os.path.join(RAIZ, SALIDA, "fantoma.npz"))
     hu, iso, origen = f["hu"], float(f["iso"]), [float(v) for v in f["origen"]]
-    d = os.path.join(RAIZ, "salida", "totalseg")
+    d = os.path.join(RAIZ, SALIDA, "totalseg")
     ruta_et = os.path.join(d, "etiquetas.npz")
     if os.path.exists(ruta_et) and np.load(ruta_et)["et"].shape == hu.shape:
         et = np.load(ruta_et)["et"]
@@ -105,9 +108,9 @@ def main():
         p = pelvis(r, hu, iso, lado)
         reg[r] = cort
         reg[p] = pel
-    np.savez_compressed(os.path.join(RAIZ, "salida", "regiones.npz"), reg=reg)
+    np.savez_compressed(os.path.join(RAIZ, SALIDA, "regiones.npz"), reg=reg)
     vol = {NOMBRES[i]: round(float((reg == i).sum()) * iso ** 3 / 1000.0, 1) for i in range(len(NOMBRES))}
-    json.dump({"volumen_ml": vol, "nombres": NOMBRES}, open(os.path.join(RAIZ, "salida", "regiones.json"), "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+    json.dump({"volumen_ml": vol, "nombres": NOMBRES}, open(os.path.join(RAIZ, SALIDA, "regiones.json"), "w", encoding="utf-8"), indent=2, ensure_ascii=False)
     print("volúmenes (mL):", vol)
 
 

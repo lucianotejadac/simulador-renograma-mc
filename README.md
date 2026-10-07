@@ -58,3 +58,10 @@ En la página, la tarjeta «Editor de contornos»: planos axial, coronal y sagit
 relleno por densidad, máscara por rango de HU, interpolación entre cortes y deshacer.
 Las correcciones se descargan como JSON; `python src/importar_correcciones.py archivo.json --rehacer` las
 aplica a la grilla del fantoma y rehace la simulación.
+
+## Paciente estándar ICRP 145 (local)
+
+`RENO_PACIENTE=icrp python src/icrp145.py` voxeliza el fantoma masculino de referencia de la ICRP (Publicación
+145, paquete de archivos electrónicos de la ICRP; ruta en ICRP145_DIR), que trae uréteres; luego los mismos
+pasos con RENO_PACIENTE=icrp generan casos con patología ureteral. Los datos derivados no se publican hasta
+obtener permiso de la ICRP para redistribuirlos.

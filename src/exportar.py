@@ -19,6 +19,8 @@ from pydicom.uid import ExplicitVRLittleEndian
 
 import modelo_mag3 as mm
 
+from paciente import SALIDA, DOCS_DATOS, DOCS_DICOM, PACIENTE  # noqa: E402
+
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAIZ_UID = "1.2.826.0.1.3680043.10.1245.9."
 
@@ -37,16 +39,19 @@ def _archivo(sop_uid):
 
 def dicom_dinamico(cuadros, dur, vista, caso, n, meta_f, ruta):
     nf, filas, cols = cuadros.shape
+    if PACIENTE == "icrp":
+        n = n + 100                                      # UID y paciente distintos del paciente TCIA
     ds = _archivo(RAIZ_UID + f"{n}.{1 if vista == 'posterior' else 2}")
     hoy = dt.datetime(2026, 10, 7, 10, 0, 0)
     ds.SpecificCharacterSet = "ISO_IR 100"
     ds.PatientName = f"SIM^RENOGRAMA {caso.upper()}"
-    ds.PatientID = f"SIM-RENO-{n:02d}"
+    ds.PatientID = f"SIM-RENO-ICRP-{n - 100:02d}" if PACIENTE == "icrp" else f"SIM-RENO-{n:02d}"
     ds.IssuerOfPatientID = "SIM"
     ds.PatientSex = meta_f.get("sexo", "") or "O"
     ds.PatientAge = meta_f.get("edad", "") or ""
     ds.PatientIdentityRemoved = "YES"
-    ds.DeidentificationMethod = "Fantoma de CT publico TCIA (PS3.15 AnnexE); actividad simulada"
+    ds.DeidentificationMethod = ("Fantoma de referencia ICRP Pub. 145 (MRCP_AM); actividad simulada" if PACIENTE == "icrp"
+                                 else "Fantoma de CT publico TCIA (PS3.15 AnnexE); actividad simulada")
     ds.StudyInstanceUID = RAIZ_UID + f"{n}.10"
     ds.SeriesInstanceUID = RAIZ_UID + f"{n}.{11 if vista == 'posterior' else 12}"
     ds.FrameOfReferenceUID = RAIZ_UID + f"{n}.13"
@@ -103,31 +108,31 @@ def dicom_dinamico(cuadros, dur, vista, caso, n, meta_f, ruta):
 
 
 def main():
-    meta_f = json.load(open(os.path.join(RAIZ, "salida", "fantoma.json"), encoding="utf-8"))
+    meta_f = json.load(open(os.path.join(RAIZ, SALIDA, "fantoma.json"), encoding="utf-8"))
     indice = []
-    os.makedirs(os.path.join(RAIZ, "docs", "dicom"), exist_ok=True)
+    os.makedirs(os.path.join(RAIZ, DOCS_DICOM), exist_ok=True)
     for n, nombre in enumerate(mm.casos(), start=1):
-        c = os.path.join(RAIZ, "salida", "casos", nombre)
+        c = os.path.join(RAIZ, SALIDA, "casos", nombre)
         cu = np.load(os.path.join(c, "cuadros.npz"))
         ro = np.load(os.path.join(c, "rois.npz"))
         cur = json.load(open(os.path.join(c, "curvas.json"), encoding="utf-8"))
         dur = cu["duraciones_s"]
-        sal = os.path.join(RAIZ, "salida", "dicom", nombre)
+        sal = os.path.join(RAIZ, SALIDA, "dicom", nombre)
         os.makedirs(sal, exist_ok=True)
         for vista in ("posterior", "anterior"):
             dicom_dinamico(cu[vista], dur, vista, nombre, n, meta_f, os.path.join(sal, f"RENOGRAMA_{vista[:4].upper()}.dcm"))
-        with zipfile.ZipFile(os.path.join(RAIZ, "docs", "dicom", f"{nombre}.zip"), "w", zipfile.ZIP_DEFLATED) as z:
+        with zipfile.ZipFile(os.path.join(RAIZ, DOCS_DICOM, f"{nombre}.zip"), "w", zipfile.ZIP_DEFLATED) as z:
             for a in os.listdir(sal):
                 z.write(os.path.join(sal, a), a)
-        d = os.path.join(RAIZ, "docs", "datos", nombre)
+        d = os.path.join(RAIZ, DOCS_DATOS, nombre)
         os.makedirs(d, exist_ok=True)
         np.ascontiguousarray(cu["posterior"]).astype(np.uint16).tofile(os.path.join(d, "post.bin"))
         rois = {k: np.nonzero(ro[k].ravel())[0].tolist() for k in ro.files}
         cur.update({"rois_indices": rois, "matriz": 128, "pixel_mm": 4.8, "n_cuadros": int(cu["posterior"].shape[0])})
         json.dump(cur, open(os.path.join(d, "meta.json"), "w", encoding="utf-8"), ensure_ascii=False)
-        indice.append({"caso": nombre, "zip_mb": round(os.path.getsize(os.path.join(RAIZ, "docs", "dicom", f"{nombre}.zip")) / 1e6, 1)})
+        indice.append({"caso": nombre, "zip_mb": round(os.path.getsize(os.path.join(RAIZ, DOCS_DICOM, f"{nombre}.zip")) / 1e6, 1)})
         print(f"{nombre}: {cu['posterior'].shape} cuadros, zip {indice[-1]['zip_mb']} MB")
-    json.dump({"casos": indice}, open(os.path.join(RAIZ, "docs", "datos", "indice.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    json.dump({"casos": indice}, open(os.path.join(RAIZ, DOCS_DATOS, "indice.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
 if __name__ == "__main__":

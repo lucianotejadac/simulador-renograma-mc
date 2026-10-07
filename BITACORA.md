@@ -96,3 +96,33 @@ vóxeles de corteza izquierda a tejido blando = 4.0 mL.
 **Trampa.** `setPointerCapture` lanza un error con punteros que el navegador no tiene activos (los de una
 prueba) y `focus()` desplazaba la página: el primer evento abortaba y no se pintaba nada. Ambos quedaron
 protegidos.
+
+---
+
+## 0004 · 2026-10-07 · Paciente estándar ICRP 145 con uréteres
+
+**Pedido.** Usar el fantoma masculino de referencia de la ICRP (Publicación 145), que trae uréteres.
+
+**Hecho.**
+- Paquete oficial de la ICRP (1.9 GB) descargado; los nombres de órganos del archivo de materiales confirman
+  13500 Ureter_left y 13600 Ureter_right, y corteza, médula y pelvis renales por separado.
+- `src/icrp145.py` voxeliza los 8.2 millones de tetraedros a 2 mm (centro del vóxel dentro del tetraedro,
+  Numba, 3 s), detecta los ejes por la anatomía y los pasa a LPS, asigna densidades por órgano según la
+  tabla de medios de la publicación y escribe un pseudo-HU = 1000 (ρ − 1) para reutilizar el motor. Las
+  masas voxelizadas reproducen las de referencia: corteza renal izquierda 162.2 g (162.3), uréter
+  izquierdo 8.9 g (8.8), contenido vesical 200.2 g (200).
+- `src/paciente.py`: con RENO_PACIENTE=icrp todo el flujo escribe en salida_icrp/ y docs/icrp/.
+- Modelo: uréter por lado entre la pelvis y la vejiga (tránsito 1 min, con respuesta opcional a la
+  furosemida). En el paciente TCIA, sin uréteres segmentados, esa actividad se ve en la pelvis; sus
+  resultados casi no cambian (normal 49.3/50.7).
+- Casos ICRP: normal, obstrucción ureterovesical izquierda (uréter y pelvis se llenan y no vacían),
+  megauréter derecho no obstructivo (vacía tras la furosemida), obstrucción pieloureteral derecha (uréter
+  sin actividad) y función reducida izquierda. Medido / verdad, función relativa: 50.2/49.8 · 50/50;
+  67.8/32.2 · 70.2/29.8.
+- DICOM con paciente y UID propios (SIM-RENO-ICRP-nn) para no chocar con los del paciente TCIA.
+
+**Decisión sobre la publicación.** La ICRP declara sus publicaciones protegidas y pide permiso
+(permissions@icrp.org) para reproducir y distribuir su material; el paquete no trae una licencia que
+autorice redistribuir los datos. El código queda en el repositorio, pero los datos derivados del fantoma
+(página, cortes, volumen del editor, DICOM) quedan fuera de Pages (`docs/icrp/` en .gitignore) hasta tener
+permiso. Localmente la página funciona en docs/icrp/.

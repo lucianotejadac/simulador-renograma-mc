@@ -15,6 +15,8 @@ import sys
 
 import numpy as np
 
+from paciente import SALIDA, DOCS_DATOS, DOCS_DICOM  # noqa: E402
+
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(RAIZ, "src"))
 
@@ -25,10 +27,10 @@ def main():
 
 
 def exportar(nombres):
-    f = np.load(os.path.join(RAIZ, "salida", "fantoma.npz"))
+    f = np.load(os.path.join(RAIZ, SALIDA, "fantoma.npz"))
     hu, iso, origen = f["hu"], float(f["iso"]), [float(v) for v in f["origen"]]
-    reg = np.load(os.path.join(RAIZ, "salida", "regiones.npz"))["reg"].astype(np.uint8)
-    d = os.path.join(RAIZ, "docs", "datos", "editor")
+    reg = np.load(os.path.join(RAIZ, SALIDA, "regiones.npz"))["reg"].astype(np.uint8)
+    d = os.path.join(RAIZ, DOCS_DATOS, "editor")
     os.makedirs(d, exist_ok=True)
     codigo = np.clip(np.round((hu.astype(np.float32) + 1000.0) / 10.0), 0, 255).astype(np.uint8)
     for nombre, arr in (("ct.u8.gz", codigo), ("etiquetas.u8.gz", reg)):

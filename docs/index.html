@@ -53,6 +53,7 @@ footer{font-size:12px;color:var(--muted);max-width:82ch}
   <header><h1>Renograma con MAG3 simulado</h1><span class="tag">Tc-99m MAG3 · planar dinámico posterior · Monte Carlo sobre un CT real · verdad conocida</span></header>
   <p class="note">Cinco renogramas de 30 minutos sobre el mismo paciente (CT público de TCIA): la física de la cámara (atenuación, dispersión, colimador, ruido) se simuló fotón a fotón y la cinética del MAG3 con un modelo de compartimentos. Analiza el estudio, interpreta la curva y recién después pide la verdad.</p>
   <div class="bar">
+    <span class="lbl">Paciente</span><a href="./" id="pac-tcia"><b>CT real (TCIA)</b></a><!-- fantoma ICRP 145: página local hasta obtener permiso de la ICRP para redistribuir sus datos -->
     <span class="lbl">Caso</span><select id="caso" aria-label="Caso"></select>
     <button id="verdad">Mostrar la verdad</button>
     <label><input type="checkbox" id="ver-rois" checked> Regiones de interés</label>
@@ -87,7 +88,7 @@ footer{font-size:12px;color:var(--muted);max-width:82ch}
 <script>
 (function(){
   var $=function(id){return document.getElementById(id);};
-  var NOMBRES={"normal":"Caso 1","funcion-reducida-izq":"Caso 2","obstruccion-der":"Caso 3","dilatacion-der":"Caso 4","no-funcionante-izq":"Caso 5"};
+  var NOMBRES={};
   var N=128, meta=null, post=null, frame=0, playing=true, last=null, verdad=false, rois={};
   var cine=$('cine').getContext('2d');
   function cargar(c){
@@ -141,13 +142,13 @@ footer{font-size:12px;color:var(--muted);max-width:82ch}
   requestAnimationFrame(loop);
   window.editorVolumen=EditorVolumen({contenedor:$('editor3d'), base:'datos/editor/', fondo:1, clave:'renograma-3d', pagina:'simulador-renograma-mc',
     estructuras:[{e:4,n:'Corteza renal D',c:[42,167,214]},{e:5,n:'Pelvis renal D',c:[30,90,255]},{e:6,n:'Corteza renal I',c:[224,150,42]},{e:7,n:'Pelvis renal I',c:[255,90,0]},
-      {e:8,n:'Vejiga',c:[255,235,0]},{e:9,n:'Hígado',c:[170,110,60]},{e:10,n:'Bazo',c:[200,80,200]},{e:11,n:'Vasos',c:[230,60,60]},{e:13,n:'Vesícula',c:[60,220,90]},
+      {e:8,n:'Vejiga',c:[255,235,0]},{e:14,n:'Uréter D',c:[0,230,230]},{e:15,n:'Uréter I',c:[255,0,255]},{e:9,n:'Hígado',c:[170,110,60]},{e:10,n:'Bazo',c:[200,80,200]},{e:11,n:'Vasos',c:[230,60,60]},{e:13,n:'Vesícula',c:[60,220,90]},
       {e:12,n:'Intestino',c:[140,200,140],on:false},{e:2,n:'Hueso',c:[210,210,210],on:false},{e:1,n:'Tejido blando',c:[120,120,120],on:false}],
     corteInicial:function(lab,Z,Y,X){ var mejor=0,k0=Math.floor(Z/2); for(var z=0;z<Z;z++){ var n=0,o=z*Y*X; for(var i=0;i<Y*X;i++){ var v=lab[o+i]; if(v>=4&&v<=7) n++; } if(n>mejor){mejor=n;k0=z;} } return k0; }});
   // ---- cortes axiales con contornos ----
   var CONT=[{e:4,n:'Corteza renal D',c:[42,167,214],on:true},{e:5,n:'Pelvis renal D',c:[30,90,255],on:true},{e:6,n:'Corteza renal I',c:[224,150,42],on:true},{e:7,n:'Pelvis renal I',c:[255,90,0],on:true},
             {e:8,n:'Vejiga',c:[255,235,0],on:true},{e:9,n:'Hígado',c:[170,110,60],on:true},{e:10,n:'Bazo',c:[200,80,200],on:true},{e:11,n:'Vasos',c:[230,60,60],on:true},
-            {e:13,n:'Vesícula',c:[60,220,90],on:false},{e:12,n:'Intestino',c:[140,200,140],on:false},{e:2,n:'Hueso',c:[210,210,210],on:false}];
+            {e:14,n:'Uréter D',c:[0,230,230],on:true},{e:15,n:'Uréter I',c:[255,0,255],on:true},{e:13,n:'Vesícula',c:[60,220,90],on:false},{e:12,n:'Intestino',c:[140,200,140],on:false},{e:2,n:'Hueso',c:[210,210,210],on:false}];
   var cortes=null, ax=$('ax').getContext('2d'), cacheCT={}, cacheEt={}, corteAct=-1, vista={ox:0,oy:0,w:1,h:1}, ed=null;
   function cargarImg(url){ return new Promise(function(ok,mal){ var im=new Image(); im.onload=function(){ok(im);}; im.onerror=mal; im.src=url; }); }
   function pad(k){ return ('00'+k).slice(-3); }
@@ -168,7 +169,7 @@ footer{font-size:12px;color:var(--muted);max-width:82ch}
     var f=$('ctl-cont'); CONT.forEach(function(q){ var l=document.createElement('label'); l.innerHTML='<input type="checkbox" '+(q.on?'checked':'')+'> <span style="display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;background:rgb('+q.c.join(',')+')"></span> '+q.n; l.firstChild.addEventListener('change',function(){ q.on=this.checked; dibujarCorte(); }); f.appendChild(l); });
     $('c-todos').addEventListener('change',dibujarCorte); $('corte').addEventListener('input',dibujarCorte);
     dibujarCorte(); });
-  fetch('datos/indice.json').then(function(r){return r.json();}).then(function(ix){ var s=$('caso'); ix.casos.forEach(function(c){ var o=document.createElement('option'); o.value=c.caso; o.textContent=NOMBRES[c.caso]||c.caso; s.appendChild(o); });
+  fetch('datos/indice.json').then(function(r){return r.json();}).then(function(ix){ var s=$('caso'); ix.casos.forEach(function(c,i){ var o=document.createElement('option'); o.value=c.caso; o.textContent='Caso '+(i+1); s.appendChild(o); });
     var h=(location.hash||'').replace('#',''); var ini=ix.casos.some(function(c){return c.caso===h;})?h:ix.casos[0].caso; s.value=ini; cargar(ini); });
 })();
 </script>

@@ -22,7 +22,7 @@ from dataclasses import dataclass, field, asdict
 import numpy as np
 
 T_MEDIO_TC99M_MIN = 6.0067 * 60.0
-COMPARTIMENTOS = ["plasma", "intersticio", "corteza_d", "corteza_i", "pelvis_d", "pelvis_i", "vejiga", "higado", "intestino"]
+COMPARTIMENTOS = ["plasma", "intersticio", "corteza_d", "corteza_i", "pelvis_d", "pelvis_i", "vejiga", "higado", "intestino", "ureter_d", "ureter_i"]
 
 
 @dataclass
@@ -31,6 +31,8 @@ class Rinon:
     tc: float = 3.0           # min: tránsito parenquimatoso medio (cadena de 3 etapas)
     tp: float = 2.0           # min: vaciamiento pélvico
     tp_furo: float | None = None   # min: vaciamiento pélvico tras la furosemida (None = sin respuesta, igual a tp)
+    tu: float = 1.0           # min: tránsito ureteral (pelvis -> uréter -> vejiga)
+    tu_furo: float | None = None   # min: tránsito ureteral tras la furosemida (None = sin respuesta)
 
 
 @dataclass
@@ -50,7 +52,9 @@ class Caso:
 
 
 def casos() -> dict[str, Caso]:
-    normal = Rinon()
+    import os
+    if os.environ.get("RENO_PACIENTE", "tcia") == "icrp":
+        return casos_icrp()
     return {
         "normal": Caso("normal", "Función y drenaje normales en ambos riñones.", Rinon(), Rinon()),
         "funcion-reducida-izq": Caso("funcion-reducida-izq", "Riñón izquierdo con función reducida (aporte relativo 30 %) y tránsito lento.",
@@ -67,6 +71,23 @@ def casos() -> dict[str, Caso]:
 ETAPAS_CORTEZA = 3      # tránsito parenquimatoso como cadena de 3 etapas (Erlang): la salida empieza tras ~1 min
 
 
+def casos_icrp() -> dict[str, Caso]:
+    """Casos del paciente estándar ICRP 145, que tiene uréteres: patología ureteral además de la renal."""
+    return {
+        "normal": Caso("normal", "Función y drenaje normales; los uréteres se ven en tránsito hacia la vejiga.", Rinon(), Rinon()),
+        "obstruccion-ureterovesical-izq": Caso("obstruccion-ureterovesical-izq",
+            "Obstrucción de la unión ureterovesical izquierda: uréter y pelvis izquierdos se llenan y no vacían, ni con furosemida.",
+            Rinon(), Rinon(tp=20.0, tu=400.0), t_furo_min=20.0),     # la contrapresión también enlentece la pelvis
+        "megaureter-der": Caso("megaureter-der", "Megauréter derecho no obstructivo: el uréter retiene y vacía tras la furosemida.",
+            Rinon(tp=4.0, tu=45.0, tu_furo=2.0), Rinon(), t_furo_min=20.0),
+        "obstruccion-pieloureteral-der": Caso("obstruccion-pieloureteral-der",
+            "Obstrucción pieloureteral derecha: la pelvis retiene y el uréter derecho no se ve; no responde a la furosemida.",
+            Rinon(tp=300.0), Rinon(), t_furo_min=20.0),
+        "funcion-reducida-izq": Caso("funcion-reducida-izq", "Riñón izquierdo con función reducida (aporte relativo 30 %) y tránsito lento.",
+            Rinon(k=0.08), Rinon(k=0.034, tc=4.5, tp=3.0)),
+    }
+
+
 def simular_curvas(caso: Caso, t_fin_min: float = 30.0, dt_s: float = 0.25):
     """Devuelve (t_s, A) con A[c, i] en MBq para cada compartimento c (orden COMPARTIMENTOS).
     La corteza de cada riñón es una cadena de ETAPAS_CORTEZA subcompartimentos de tc/ETAPAS cada uno (tránsito
@@ -75,7 +96,7 @@ def simular_curvas(caso: Caso, t_fin_min: float = 30.0, dt_s: float = 0.25):
     t = np.arange(n) * dt_s
     A = np.zeros((len(COMPARTIMENTOS), n))
     E = ETAPAS_CORTEZA
-    B = T = Pd = Pi = V = H = G = 0.0
+    B = T = Pd = Pi = V = H = G = Ud = Ui = 0.0
     Cd = np.zeros(E)
     Ci = np.zeros(E)
     dtm = dt_s / 60.0
@@ -84,11 +105,13 @@ def simular_curvas(caso: Caso, t_fin_min: float = 30.0, dt_s: float = 0.25):
     tasa_bolo = caso.actividad_MBq / (caso.duracion_bolo_s / 60.0)
     for j in range(n):
         tmin = t[j] / 60.0
-        A[:, j] = (B, T, Cd.sum(), Ci.sum(), Pd, Pi, V, H, G)
+        A[:, j] = (B, T, Cd.sum(), Ci.sum(), Pd, Pi, V, H, G, Ud, Ui)
         entrada = tasa_bolo if caso.t_inyeccion_s <= t[j] < caso.t_inyeccion_s + caso.duracion_bolo_s else 0.0
         furo = caso.t_furo_min is not None and tmin >= caso.t_furo_min + 2.0
         tpd = d.tp_furo if (furo and d.tp_furo) else d.tp
         tpi = i_.tp_furo if (furo and i_.tp_furo) else i_.tp
+        tud = d.tu_furo if (furo and d.tu_furo) else d.tu
+        tui = i_.tu_furo if (furo and i_.tu_furo) else i_.tu
         kd_, ki_ = E / d.tc, E / i_.tc
         sal_d, sal_i = Cd[-1] * kd_, Ci[-1] * ki_
         dCd = np.empty(E); dCi = np.empty(E)
@@ -100,13 +123,16 @@ def simular_curvas(caso: Caso, t_fin_min: float = 30.0, dt_s: float = 0.25):
         dT = caso.kbt * B - caso.ktb * T
         dPd = sal_d - Pd / tpd
         dPi = sal_i - Pi / tpi
-        dV = Pd / tpd + Pi / tpi
+        dUd = Pd / tpd - Ud / tud
+        dUi = Pi / tpi - Ui / tui
+        dV = Ud / tud + Ui / tui
         dH = caso.kh * B - H / caso.th
         dG = H / caso.th
         B, T = (B + dtm * dB) * decae, (T + dtm * dT) * decae
         Cd, Ci = (Cd + dtm * dCd) * decae, (Ci + dtm * dCi) * decae
         Pd, Pi = (Pd + dtm * dPd) * decae, (Pi + dtm * dPi) * decae
         V, H, G = (V + dtm * dV) * decae, (H + dtm * dH) * decae, (G + dtm * dG) * decae
+        Ud, Ui = (Ud + dtm * dUd) * decae, (Ui + dtm * dUi) * decae
     return t, A
 
 

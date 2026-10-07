@@ -6,3 +6,5 @@ salida/*.npz
 salida/totalseg/*.nii.gz
 salida/casos/*/*.npz
 salida/dicom/
+salida_icrp/
+docs/icrp/

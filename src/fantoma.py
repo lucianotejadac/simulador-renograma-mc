@@ -16,6 +16,8 @@ import numpy as np
 import pydicom
 from scipy import ndimage
 
+from paciente import SALIDA, DOCS_DATOS, DOCS_DICOM  # noqa: E402
+
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CT_POR_DEFECTO = r"C:\Users\lucia\Downloads\PET CT\ENTREGA PET\PET Magdalena\Caso 2\CT"
 MU_AGUA_140, MU_HUESO_140, HU_HUESO_REF = 0.1537, 0.2860, 1000.0
@@ -63,18 +65,18 @@ def main():
     ap.add_argument("--z-sup", type=float, default=-440.0, help="mm (LPS), borde craneal")
     ap.add_argument("--z-inf", type=float, default=-1000.0, help="mm (LPS), borde caudal")
     a = ap.parse_args()
-    os.makedirs(os.path.join(RAIZ, "salida"), exist_ok=True)
+    os.makedirs(os.path.join(RAIZ, SALIDA), exist_ok=True)
     hu, z, ps, origen, cortes = leer_ct(a.ct)
     dz = float(np.median(np.diff(z)))
     sub, (i_a, i_b, y0, y1, x0, x1) = recortar(hu, z, ps, a.z_sup, a.z_inf)
     iso = ndimage.zoom(sub, (dz / a.iso, ps[0] / a.iso, ps[1] / a.iso), order=1, mode="nearest").astype(np.float32)
     mu = hu_a_mu(iso)
     org = [origen[0] + x0 * ps[1], origen[1] + y0 * ps[0], float(z[i_a])]
-    np.savez_compressed(os.path.join(RAIZ, "salida", "fantoma.npz"), hu=np.round(iso).astype(np.int16), mu=mu, iso=a.iso, origen=np.array(org))
+    np.savez_compressed(os.path.join(RAIZ, SALIDA, "fantoma.npz"), hu=np.round(iso).astype(np.int16), mu=mu, iso=a.iso, origen=np.array(org))
     json.dump({"ct": a.ct, "iso_mm": a.iso, "forma_zyx": list(iso.shape), "origen_mm": org, "recorte_indices": [i_a, i_b, y0, y1, x0, x1],
                "ct_espaciado_mm": [dz, ps[0], ps[1]], "z_sup": a.z_sup, "z_inf": a.z_inf,
                "sexo": str(getattr(cortes[0], "PatientSex", "")), "edad": str(getattr(cortes[0], "PatientAge", ""))},
-              open(os.path.join(RAIZ, "salida", "fantoma.json"), "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+              open(os.path.join(RAIZ, SALIDA, "fantoma.json"), "w", encoding="utf-8"), indent=2, ensure_ascii=False)
     print(f"fantoma {iso.shape} a {a.iso} mm ({iso.shape[0] * a.iso / 10:.0f} x {iso.shape[1] * a.iso / 10:.0f} x {iso.shape[2] * a.iso / 10:.0f} cm); "
           f"bordes: {[int(((iso > -300)[:, :, k]).sum()) for k in (0, -1)]} vóxeles de cuerpo en las columnas extremas")
 

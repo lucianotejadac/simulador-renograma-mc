@@ -21,6 +21,8 @@ from scipy import ndimage
 
 import modelo_mag3 as mm
 
+from paciente import SALIDA, DOCS_DATOS, DOCS_DICOM  # noqa: E402
+
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -66,7 +68,7 @@ def medir(curva_rinon, curva_fondo, area_r, area_f, t_centro, duraciones):
 
 def generar(nombre: str, semilla: int = 1):
     caso = mm.casos()[nombre]
-    S = dict(np.load(os.path.join(RAIZ, "salida", "sensibilidades.npz")))
+    S = dict(np.load(os.path.join(RAIZ, SALIDA, "sensibilidades.npz")))
     dur = mm.protocolo()
     t, A = mm.simular_curvas(caso, t_fin_min=dur.sum() / 60.0)
     I = mm.integrar_cuadros(t, A, dur)                       # (comp, cuadro) MBq·s
@@ -97,7 +99,7 @@ def generar(nombre: str, semilla: int = 1):
     vej = cuadros["posterior"].sum(axis=0)
     verdad = mm.verdad_clinica(caso, t, A)
     i_t = (np.arange(0, len(t), int(10 / (t[1] - t[0]))))       # curvas verdaderas cada 10 s
-    carpeta = os.path.join(RAIZ, "salida", "casos", nombre)
+    carpeta = os.path.join(RAIZ, SALIDA, "casos", nombre)
     os.makedirs(carpeta, exist_ok=True)
     np.savez_compressed(os.path.join(carpeta, "cuadros.npz"), posterior=cuadros["posterior"], anterior=cuadros["anterior"], duraciones_s=dur)
     np.savez_compressed(os.path.join(carpeta, "rois.npz"), **{k: v.astype(np.uint8) for k, v in R.items()})
