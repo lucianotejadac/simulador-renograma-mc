@@ -1,0 +1,36 @@
+{
+ "descripcion": "Osteomielitis de la cabeza del primer metatarsiano izquierdo.",
+ "lesion": {
+  "plantar_uv": [
+   102.7,
+   55.1
+  ],
+  "ant_uv": [
+   191.9,
+   761.7
+  ],
+  "post_uv": [
+   75.1,
+   761.7
+  ]
+ },
+ "fase1": {
+  "cuadros": 30,
+  "dur_s": 2,
+  "matriz": 128
+ },
+ "fase2": {
+  "inicio_s": 180,
+  "fin_s": 480
+ },
+ "fase3": {
+  "inicio_min": 180,
+  "dur_s": 300
+ },
+ "cuerpo_entero": {
+  "filas": 792,
+  "columnas": 268,
+  "pixel_mm": 2.4
+ },
+ "actividad_MBq": 740
+}

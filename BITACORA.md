@@ -179,3 +179,42 @@ el renograma tenía 2 a 3 veces más fondo del real. Rehecho: función reducida 
   propia. Página local sin regiones ni tablas, con un marcador opcional de la lesión.
 
 **Publicación.** Código público; salida_osea/ y docs/icrp/ quedan fuera del repositorio por la licencia ICRP.
+
+---
+
+## 0007 · 2026-10-09 · El cintigrama óseo pasa al CT del Visible Human
+
+**Pedido.** Que el cintigrama óseo se vea más realista, primero sobre un CT de cuerpo completo de una base pública.
+
+**Descartado.**
+- TCIA FDG-PET-CT-Lesions (autoPET) tiene CT de 1.98 m, pero la desidentificación borra la cabeza entera (opción
+  «Clean Pixel Data»; revisado en cinco pacientes) y los brazos van sobre la cabeza.
+- CMB-MEL separa tronco y piernas, y su tramo de extremidades cubre menos de 1 m; CMB-MML, CMB-LCA, CMB-PCA,
+  CMB-CRC, TCGA-SARC y Soft-tissue-Sarcoma no llegan de la cabeza a los pies.
+- PHANTOM (NCI/UF) exige acuerdo de transferencia; XCAT y Virtual Population son de pago; BodyParts3D/Z-Anatomy son
+  mallas, no CT.
+
+**Elegido.** El Visible Human masculino de la NLM: dominio público desde 2019, de la cabeza a los pies, brazos a los
+lados. Se puede publicar, a diferencia del fantoma ICRP.
+
+**Hecho (src/osea_vh.py).**
+- CT congelado: 1877 cortes de 1 mm, campos de 270, 400 y 480 mm y centros distintos según el tramo; cada corte se
+  lleva a una grilla común de 480 mm. Tres sesiones de escaneo: los pies se escanearon aparte y quedaron 37 mm
+  desplazados; se corrige por correlación de fase con el corte vecino.
+- Un soporte denso junto a la rodilla izquierda (unos 0.8 L) se quita como componente de cada corte con mediana
+  sobre 150 HU, más lo que queda en su huella cuando toca la pierna.
+- El tejido congelado tiene la moda del tejido blando en −22 HU; se lleva a 40 HU antes de calcular atenuaciones.
+- El congelado no tiene contraste entre tejidos blandos y TotalSegmentator encontraba 33 mL de riñón. Los órganos
+  se contornean sobre el CT fresco del mismo cadáver (cabeza a muslo), alineado al congelado por correlación de
+  fase 3D del hueso (42 mm en sentido anteroposterior), y se trasladan: riñones 298 mL, hígado 1736, bazo 226.
+- Los brazos tocan el borde del campo: el truncamiento sube el tejido blando a 150–400 HU y salían como franjas de
+  hueso esponjoso muy calientes. En 30 mm junto al borde, el hueso exige vecindad con la cortical (≥ 700 HU).
+- La lesión se ubica igual que en el ICRP, con el pie en flexión plantar (banda de 12 cm desde el dedo más bajo).
+
+**Trampas.** El Control de aplicaciones de Windows bloquea TotalSegmentator.exe y la DLL _csr_polynomial_expansion
+de scikit-learn 1.9.1: se usa la interfaz de Python y scikit-learn 1.6.1. La página tenía el alto del cuerpo
+entero fijo en 768 filas y cortaba los pies del Visible Human (792): ahora lo lee de meta.json.
+
+**Publicación.** Página pública en docs/osea/ con la cita de la NLM; volúmenes de trabajo (salida_osea_vh/) fuera
+del repositorio. Las mejoras de realismo propuestas (arterias, hiperemia del primer rayo, mosaico de perfusión,
+hallazgos degenerativos, interpolación) siguen pendientes de decisión.

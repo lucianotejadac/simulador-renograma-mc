@@ -1,4 +1,4 @@
-"""Cintigrama óseo trifásico con Tc-99m MDP (un caso: osteomielitis del primer metatarsiano izquierdo), fantoma ICRP 145.
+"""Cintigrama óseo trifásico con Tc-99m MDP (un caso: osteomielitis del primer metatarsiano izquierdo), sobre el CT del Visible Human (NLM) o el fantoma ICRP 145 (OSEA_BASE=vh|icrp).
 
 Modelo global (MBq): plasma P, extracelular E, hueso H, riñones K, vejiga V.
     P' = bolo − (kpe + kh + kr)·P + kep·E,   E' = kpe·P − kep·E,   H' = kh·P,   K' = kr·P − K/tk,   V' = K/tk
@@ -28,8 +28,17 @@ import numpy as np
 import montecarlo as mc
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SALIDA = os.path.join(RAIZ, "salida_osea")
-DOCS = os.path.join(RAIZ, "docs", "icrp", "osea")
+BASE = os.environ.get("OSEA_BASE", "vh")            # vh: CT del Visible Human (osea_vh.py, público); icrp: fantoma ICRP 145 (local)
+SALIDA = os.path.join(RAIZ, {"icrp": "salida_osea", "vh": "salida_osea_vh"}[BASE])
+DOCS = os.path.join(RAIZ, "docs", "icrp", "osea") if BASE == "icrp" else os.path.join(RAIZ, "docs", "osea")
+ANCHO_CE = 268                                       # columnas que se muestran del cuerpo entero (64 cm)
+
+
+def matriz_ce():
+    """Matriz cuadrada del cuerpo entero (2.4 mm): cubre el largo del volumen con 2 cm de margen; mínimo 768."""
+    pc = np.load(os.path.join(SALIDA, "cuerpo.npz"))
+    largo = pc["reg"].shape[0] * float(pc["iso"]) + 20.0
+    return max(768, 2 * int(np.ceil(largo / 2.4 / 2)))
 T_MEDIO = 6.0067 * 3600.0
 VOL_SANGRE, VOL_EXTRA = 5300.0, 14000.0
 # pesos por etiqueta (ver osea_fantoma.py)
@@ -119,7 +128,7 @@ def sensibilidades(historias):
     yy = np.nonzero((mu > 0.02).any(axis=(0, 2)))[0]
     cy = mu.shape[1] * iso / 2
     for vista, ang, d in (("ant", 270.0, cy - yy.min() * iso + 2.0), ("post", 90.0, (yy.max() + 1) * iso - cy + 2.0)):
-        cam = mc.Camara(1, 360.0, ang, round(float(d), 1), 768, 2.4, 1.0)
+        cam = mc.Camara(1, 360.0, ang, round(float(d), 1), matriz_ce(), 2.4, 1.0)
         for nombre, pesos in (("vasc", VASC), ("extra", EXTRA), ("hueso", HUESO), ("rinon", {6: 1.0}), ("vejiga", {7: 1.0})):
             a, suma = mapa(reg, pesos, iso ** 3)
             act = a * (1000.0 / suma)
@@ -197,9 +206,10 @@ def posiciones_lesion():
     zc, yc, xc = les["centro_cuerpo_zyx"]
     nzc, nyc, nxc = pc["reg"].shape
     isc = float(pc["iso"])
-    u_ant = ((xc + 0.5) * isc - nxc * isc / 2) / 2.4 + 384
-    v = ((zc + 0.5) * isc - nzc * isc / 2) / 2.4 + 384
-    return {"plantar_uv": [round(u_pl, 1), round(v_pl, 1)], "ant_uv": [round(u_ant, 1), round(v, 1)], "post_uv": [round(768 - u_ant, 1), round(v, 1)]}
+    n = matriz_ce()
+    u_ant = ((xc + 0.5) * isc - nxc * isc / 2) / 2.4 + n / 2
+    v = ((zc + 0.5) * isc - nzc * isc / 2) / 2.4 + n / 2
+    return {"plantar_uv": [round(u_pl, 1), round(v_pl, 1)], "ant_uv": [round(u_ant, 1), round(v, 1)], "post_uv": [round(n - u_ant, 1), round(v, 1)]}
 
 
 def exportar():
@@ -207,7 +217,10 @@ def exportar():
     from pydicom.sequence import Sequence
     from pydicom.uid import ExplicitVRLittleEndian
     d = np.load(os.path.join(SALIDA, "imagenes.npz"))
-    raiz = "1.2.826.0.1.3680043.10.1245.12."
+    raiz = "1.2.826.0.1.3680043.10.1245.12." if BASE == "icrp" else "1.2.826.0.1.3680043.10.1245.14."
+    pid = "SIM-OSEO-ICRP-01" if BASE == "icrp" else "SIM-OSEO-VH-01"
+    origen_txt = ("Fantoma de referencia ICRP Pub. 145 (MRCP_AM); actividad simulada" if BASE == "icrp" else
+                  "Anatomia del CT del Visible Human Project, U.S. National Library of Medicine; actividad simulada")
     os.makedirs(os.path.join(DOCS, "datos"), exist_ok=True)
     os.makedirs(os.path.join(SALIDA, "dicom"), exist_ok=True)
     def nm(nombre, cuadros, pix, desc, tipo, serie, dur_ms, vista):
@@ -220,9 +233,9 @@ def exportar():
         ds.is_little_endian, ds.is_implicit_VR = True, False
         ds.SOPClassUID, ds.SOPInstanceUID = fm.MediaStorageSOPClassUID, fm.MediaStorageSOPInstanceUID
         ds.SpecificCharacterSet = "ISO_IR 100"
-        ds.PatientName, ds.PatientID, ds.IssuerOfPatientID, ds.PatientSex = "SIM^OSEO TRIFASICO", "SIM-OSEO-ICRP-01", "SIM", "M"
+        ds.PatientName, ds.PatientID, ds.IssuerOfPatientID, ds.PatientSex = "SIM^OSEO TRIFASICO", pid, "SIM", "M"
         ds.PatientIdentityRemoved = "YES"
-        ds.DeidentificationMethod = "Fantoma de referencia ICRP Pub. 145 (MRCP_AM); actividad simulada"
+        ds.DeidentificationMethod = origen_txt
         ds.StudyInstanceUID, ds.SeriesInstanceUID, ds.FrameOfReferenceUID = raiz + "10", raiz + f"11.{serie}", raiz + "12"
         ds.StudyDate = ds.SeriesDate = "20261009"
         ds.StudyTime = ds.SeriesTime = "090000"
@@ -267,7 +280,9 @@ def exportar():
         return ruta
     # vista plantar como en la clínica: dedos arriba (sin invertir filas) y pie izquierdo a la derecha (columnas invertidas)
     plantar = lambda a: a[..., ::-1]
-    ce = lambda a: a[::-1, 250:518]                 # cabeza arriba, recorte lateral del campo de 768
+    n = matriz_ce()
+    c0 = n // 2 - ANCHO_CE // 2
+    ce = lambda a: a[::-1, c0:c0 + ANCHO_CE]        # cabeza arriba, recorte lateral del campo
     rutas = [nm("FASE1_PERFUSION.dcm", plantar(d["fase1"]), 3.5, "FASE 1 PERFUSION PLANTAR", "DYNAMIC", 1, 2000, "plantar"),
              nm("FASE2_POOL.dcm", plantar(d["fase2"])[None], 3.5, "FASE 2 POOL PLANTAR", "STATIC", 2, 300000, "plantar"),
              nm("FASE3_TARDIA.dcm", plantar(d["fase3"])[None], 3.5, "FASE 3 TARDIA PLANTAR", "STATIC", 3, 300000, "plantar"),
@@ -278,16 +293,16 @@ def exportar():
     pos = posiciones_lesion()
     u, v = pos["plantar_uv"]
     pos["plantar_uv"] = [round(127 - u, 1), round(v, 1)]                           # columnas invertidas
-    pos["ant_uv"] = [round(pos["ant_uv"][0] - 250, 1), round(767 - pos["ant_uv"][1], 1)]
+    pos["ant_uv"] = [round(pos["ant_uv"][0] - c0, 1), round(n - 1 - pos["ant_uv"][1], 1)]
     a_u = posiciones_lesion()["ant_uv"]          # sin recortar ni invertir
-    pos["post_uv"] = [round(268 - 1 - (a_u[0] - 250), 1), round(767 - a_u[1], 1)]   # posterior vista desde atrás: izquierda del paciente a la izquierda
+    pos["post_uv"] = [round(ANCHO_CE - 1 - (a_u[0] - c0), 1), round(n - 1 - a_u[1], 1)]   # posterior vista desde atrás: izquierda del paciente a la izquierda
     for nombre, arr in (("fase1", plantar(d["fase1"])), ("fase2", plantar(d["fase2"])), ("fase3", plantar(d["fase3"])),
                         ("ce_ant", ce(d["ce_ant"])), ("ce_post", ce(d["ce_post"])[:, ::-1])):
         np.ascontiguousarray(arr).astype(np.uint16).tofile(os.path.join(DOCS, "datos", f"{nombre}.bin"))
     les = json.load(open(os.path.join(SALIDA, "lesion.json"), encoding="utf-8"))
     json.dump({"descripcion": les["descripcion"], "lesion": pos, "fase1": {"cuadros": 30, "dur_s": 2, "matriz": 128},
                "fase2": {"inicio_s": 180, "fin_s": 480}, "fase3": {"inicio_min": 180, "dur_s": 300},
-               "cuerpo_entero": {"filas": 768, "columnas": 268, "pixel_mm": 2.4}, "actividad_MBq": 740},
+               "cuerpo_entero": {"filas": n, "columnas": ANCHO_CE, "pixel_mm": 2.4}, "actividad_MBq": 740},
               open(os.path.join(DOCS, "datos", "meta.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print("exportado; lesión en:", pos)
 

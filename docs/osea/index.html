@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cintigrama óseo trifásico</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f0efec;--panel:#fff;--ink:#1d1c19;--muted:#66625a;--line:#d9d5cc;--accent:#8a5a1c;--accent-ink:#fff;--soft:#f3e7d4;--marca:#d23a2a;
+  --body:"IBM Plex Sans",system-ui,sans-serif;--disp:"IBM Plex Sans Condensed","Arial Narrow",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#141311;--panel:#1d1b18;--ink:#ece8e1;--muted:#a19a8e;--line:#34302a;--accent:#d9a35a;--accent-ink:#1a1206;--soft:#2e2517;--marca:#ff6a55}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#141311;--panel:#1d1b18;--ink:#ece8e1;--muted:#a19a8e;--line:#34302a;--accent:#d9a35a;--accent-ink:#1a1206;--soft:#2e2517;--marca:#ff6a55}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--body)}
+.envoltura{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:24px 48px;display:flex;flex-direction:column;gap:20px}
+h1,h2{font-family:var(--disp);font-weight:600;text-wrap:balance;margin:0}
+h1{font-size:1.9rem;line-height:1.15}
+h2{font-size:1.15rem}
+.rotulo{font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.intro{max-width:68ch;color:var(--muted);margin:6px 0 0}
+.barra{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.barra label{display:flex;gap:8px;align-items:center}
+input[type=range]{accent-color:var(--accent);width:140px;max-width:100%;min-width:0}
+input[type=checkbox]{accent-color:var(--marca);width:16px;height:16px}
+button,.boton{font:500 .9rem var(--body);background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:7px 14px;cursor:pointer;text-decoration:none}
+.boton.sec{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.fases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.cuerpo{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:16px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.lamina{position:relative;background:#fff;border-radius:4px;overflow:hidden;min-width:0}
+.lamina canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+.lamina .orient{position:absolute;font:500 .7rem var(--mono);color:#555;padding:4px 6px}
+.dato{font:400 .8rem var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.par{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.cine{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.nota{font-size:.88rem;color:var(--muted);max-width:68ch}
+.caso{background:var(--soft);border-radius:8px;padding:12px 16px;max-width:80ch}
+@media (max-width:820px){.fases{grid-template-columns:1fr}.cuerpo{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="envoltura">
+  <header>
+    <div class="rotulo">Tc-99m MDP · 740 MBq · CT del Visible Human · Monte Carlo LEHR</div>
+    <h1>Cintigrama óseo trifásico</h1>
+    <p class="intro">Imágenes simuladas de un solo caso sobre la anatomía real de un CT de cuerpo completo. La perfusión y el pool vascular se adquieren en vista plantar con los pies sobre el detector; la fase tardía se adquiere a las 3 horas, junto con el rastreo de cuerpo entero.</p>
+  </header>
+
+  <div class="barra">
+    <label>Saturación <input type="range" id="sat" min="20" max="100" value="70"></label>
+    <label><input type="checkbox" id="marca"> Mostrar la lesión</label>
+    <a class="boton sec" href="osteomielitis.zip" download>DICOM (ZIP)</a>
+  </div>
+
+  <section class="caso" id="caso" hidden>
+    <div class="rotulo">Hallazgo simulado</div>
+    <div id="caso-texto"></div>
+  </section>
+
+  <section class="fases">
+    <div class="panel">
+      <h2>Fase 1 · perfusión</h2>
+      <div class="lamina"><canvas id="c-f1" width="128" height="128"></canvas><span class="orient" style="left:0;top:0">D</span><span class="orient" style="right:0;top:0">I</span></div>
+      <div class="cine">
+        <button id="play">Pausa</button>
+        <input type="range" id="cuadro" min="0" max="29" value="0" style="flex:1">
+        <span class="dato" id="t-cuadro">0–2 s</span>
+      </div>
+      <div class="dato">30 cuadros de 2 s desde la inyección · plantar</div>
+    </div>
+    <div class="panel">
+      <h2>Fase 2 · pool vascular</h2>
+      <div class="lamina"><canvas id="c-f2" width="128" height="128"></canvas><span class="orient" style="left:0;top:0">D</span><span class="orient" style="right:0;top:0">I</span></div>
+      <div class="dato">3–8 min · 300 s · plantar</div>
+    </div>
+    <div class="panel">
+      <h2>Fase 3 · tardía</h2>
+      <div class="lamina"><canvas id="c-f3" width="128" height="128"></canvas><span class="orient" style="left:0;top:0">D</span><span class="orient" style="right:0;top:0">I</span></div>
+      <div class="dato">3 h · 300 s · plantar</div>
+    </div>
+  </section>
+
+  <section class="cuerpo">
+    <div class="panel">
+      <h2>Cuerpo entero · 3 h</h2>
+      <div class="par">
+        <div><div class="rotulo">Anterior</div><div class="lamina"><canvas id="c-ant" width="268" height="768"></canvas><span class="orient" style="left:0;top:0">D</span><span class="orient" style="right:0;top:0">I</span></div></div>
+        <div><div class="rotulo">Posterior</div><div class="lamina"><canvas id="c-post" width="268" height="768"></canvas><span class="orient" style="left:0;top:0">I</span><span class="orient" style="right:0;top:0">D</span></div></div>
+      </div>
+      <div class="dato">velocidad equivalente a 160 s por campo · píxel 2,4 mm</div>
+    </div>
+    <div class="panel nota">
+      <h2>Cómo leer las vistas</h2>
+      <p>Las vistas plantares se muestran con los dedos hacia arriba, como si el observador mirara las plantas de frente. Por eso el pie derecho del paciente queda a la izquierda de la pantalla.</p>
+      <p>La anterior de cuerpo entero se ve de frente y la posterior desde atrás. Las letras D e I de cada esquina indican el lado del paciente.</p>
+      <p>La saturación recorta las cuentas más altas para que se distinga mejor el resto de la imagen. En la fase 1 la escala es común a todo el cine, para que se vea la llegada del bolo.</p>
+      <p class="dato">Anatomía: CT del cadáver masculino del Visible Human Project, U.S. National Library of Medicine (dominio público). Hueso por número CT; riñones, vejiga, hígado, bazo, corazón y grandes vasos contorneados con TotalSegmentator. La actividad y las imágenes son simuladas por Monte Carlo.</p>
+      <p class="dato">Código y bitácora en <a href="https://github.com/lucianotejadac/simulador-renograma-mc">github.com/lucianotejadac/simulador-renograma-mc</a> (MIT). Otros simuladores en <a href="https://lucianotejadac.github.io/">lucianotejadac.github.io</a>.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(async () => {
+  const D = "datos/";
+  const meta = await (await fetch(D + "meta.json")).json();
+  const leer = async (n, forma) => new Uint16Array(await (await fetch(D + n + ".bin")).arrayBuffer());
+  const f1 = await leer("fase1"), f2 = await leer("fase2"), f3 = await leer("fase3");
+  const ant = await leer("ce_ant"), post = await leer("ce_post");
+  const N = 128, CW = meta.cuerpo_entero.columnas, CH = meta.cuerpo_entero.filas;
+  for (const id of ["c-ant", "c-post"]) { const cv = document.getElementById(id); cv.width = CW; cv.height = CH; }
+  const sat = document.getElementById("sat"), marca = document.getElementById("marca");
+  document.getElementById("caso-texto").textContent = meta.descripcion;
+
+  function percentil(a, p) {
+    const s = Float32Array.from(a).sort();
+    return s[Math.min(s.length - 1, Math.floor(p * s.length))] || 1;
+  }
+  function pintar(cv, datos, ancho, alto, maxCuentas, punto) {
+    const ctx = cv.getContext("2d"), img = ctx.createImageData(ancho, alto);
+    for (let i = 0; i < ancho * alto; i++) {
+      const g = 255 - Math.min(255, Math.round(255 * datos[i] / maxCuentas));
+      img.data[4 * i] = img.data[4 * i + 1] = img.data[4 * i + 2] = g; img.data[4 * i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    if (marca.checked && punto) {
+      const r = ancho > 200 ? 14 : 7, color = getComputedStyle(document.documentElement).getPropertyValue("--marca");
+      ctx.strokeStyle = color; ctx.lineWidth = ancho > 200 ? 2 : 1;
+      ctx.beginPath(); ctx.arc(punto[0] + .5, punto[1] + .5, r, 0, 2 * Math.PI); ctx.stroke();
+    }
+  }
+  // máximo de referencia: percentil alto de los píxeles con cuentas, ajustado por la saturación
+  const maxSat = (datos, q) => {
+    const nz = datos.filter(v => v > 0);
+    return Math.max(1, percentil(nz.length ? nz : datos, 0.999) * q);
+  };
+  let k = 0, corriendo = true, ult = 0;
+  const lesion = meta.lesion;
+  function dibujarFijas() {
+    const q = sat.value / 100;
+    pintar(document.getElementById("c-f2"), f2, N, N, maxSat(f2, q), lesion.plantar_uv);
+    pintar(document.getElementById("c-f3"), f3, N, N, maxSat(f3, q), lesion.plantar_uv);
+    pintar(document.getElementById("c-ant"), ant, CW, CH, maxSat(ant, q * 0.6), lesion.ant_uv);
+    pintar(document.getElementById("c-post"), post, CW, CH, maxSat(post, q * 0.6), lesion.post_uv);
+  }
+  function dibujarCuadro() {
+    const c = f1.subarray(k * N * N, (k + 1) * N * N);
+    // umbral fijo para todo el cine: muestra la llegada del bolo y no un ruido amplificado en los primeros cuadros
+    pintar(document.getElementById("c-f1"), c, N, N, Math.max(1, maxGlobal * sat.value / 100), lesion.plantar_uv);
+    document.getElementById("cuadro").value = k;
+    document.getElementById("t-cuadro").textContent = `${2 * k}–${2 * k + 2} s`;
+  }
+  let maxGlobal = 1;
+  for (let j = 0; j < 30; j++) maxGlobal = Math.max(maxGlobal, percentil(f1.subarray(j * N * N, (j + 1) * N * N), 0.999));
+  maxGlobal *= 0.6;
+  function bucle(t) {
+    if (corriendo && t - ult > 250) { ult = t; k = (k + 1) % 30; dibujarCuadro(); }
+    requestAnimationFrame(bucle);
+  }
+  document.getElementById("play").onclick = e => { corriendo = !corriendo; e.target.textContent = corriendo ? "Pausa" : "Reproducir"; };
+  document.getElementById("cuadro").oninput = e => { corriendo = false; document.getElementById("play").textContent = "Reproducir"; k = +e.target.value; dibujarCuadro(); };
+  sat.oninput = () => { dibujarFijas(); dibujarCuadro(); };
+  marca.onchange = () => { document.getElementById("caso").hidden = !marca.checked; dibujarFijas(); dibujarCuadro(); };
+  dibujarFijas(); dibujarCuadro(); requestAnimationFrame(bucle);
+})();
+</script>
+</body>
+</html>

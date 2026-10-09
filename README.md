@@ -77,3 +77,19 @@ cinco casos con estímulo ácido, DICOM y página en docs/icrp/salival/). Modelo
 `python src/osea_estudio.py` (Monte Carlo, imágenes, DICOM y página en docs/icrp/osea/). Un solo caso,
 osteomielitis de la cabeza del primer metatarsiano izquierdo, y solo imágenes: perfusión plantar en cuadros
 de 2 s, pool vascular, tardía plantar y cuerpo entero anterior y posterior a las 3 h.
+
+## Cintigrama óseo trifásico sobre el Visible Human (público)
+
+Página: docs/osea/. Anatomía del CT congelado del cadáver masculino del Visible Human Project (U.S. National
+Library of Medicine, dominio público), de la cabeza a los pies y con los brazos a los lados. Los PNG y cabeceras se
+descargan de data.lhncbc.nlm.nih.gov (Male-Images: PNG_format/radiological/frozenCT y normalCT, y
+radiological/frozenCTHeaders y normalCTHeaders) a una carpeta indicada por VH_DIR.
+
+```
+python src/osea_vh.py leer             # CT congelado a 3 y 2 mm, sin objetos ajenos, HU del congelado corregidos
+python src/osea_vh.py organos_fresco   # TotalSegmentator sobre el CT fresco, alineado y trasladado al congelado
+python src/osea_vh.py etiquetar        # hueso por HU, órganos y lesión
+OSEA_BASE=vh python src/osea_estudio.py
+```
+
+`OSEA_BASE=icrp` repite el mismo estudio sobre el fantoma ICRP 145 (solo local).
