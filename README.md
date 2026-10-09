@@ -70,3 +70,10 @@ obtener permiso de la ICRP para redistribuirlos.
 
 `python src/salival_fantoma.py` (cabeza y cuello del fantoma), `python src/salival_estudio.py` (Monte Carlo,
 cinco casos con estímulo ácido, DICOM y página en docs/icrp/salival/). Modelo en `src/salival_modelo.py`.
+
+## Cintigrama óseo trifásico (fantoma ICRP 145, local)
+
+`python src/osea_fantoma.py` (cuerpo entero a 3 mm y piernas y pies a 2 mm, con la lesión) y
+`python src/osea_estudio.py` (Monte Carlo, imágenes, DICOM y página en docs/icrp/osea/). Un solo caso,
+osteomielitis de la cabeza del primer metatarsiano izquierdo, y solo imágenes: perfusión plantar en cuadros
+de 2 s, pool vascular, tardía plantar y cuerpo entero anterior y posterior a las 3 h.

@@ -156,3 +156,26 @@ el renograma tenía 2 a 3 veces más fondo del real. Rehecho: función reducida 
 70.2/29.8) y riñón no funcionante 4.2 % (antes 9.4 %).
 
 **Publicación.** Código público; datos del fantoma ICRP solo locales (salida_salival/ y docs/icrp/ en .gitignore).
+
+---
+
+## 0006 · 2026-10-09 · Cintigrama óseo trifásico sobre el fantoma ICRP
+
+**Pedido.** Un cintigrama óseo trifásico, un solo caso y sin mediciones.
+
+**Hecho.**
+- `src/osea_fantoma.py`: cuerpo entero a 3 mm y los 45 cm inferiores a 2 mm. Etiquetas de hueso cortical,
+  esponjoso y medular, riñones, vejiga, sangre de grandes vasos, hígado y bazo. El fantoma trae todos los
+  huesos del pie como un solo órgano, así que la lesión se ubica por anatomía: a 70 % del talón a la punta
+  del pie izquierdo, en el borde medial y hacia plantar. Esfera ósea de 9 mm y partes blandas inflamadas
+  dentro de 16 mm.
+- `src/osea_estudio.py`: Tc-99m MDP 740 MBq con plasma, extracelular, hueso, riñones y vejiga (micción a
+  los 150 min). A las 3 h, corregido por decaimiento: hueso 53 %, sangre 2 %, extracelular 7 %. La lesión
+  tiene más volumen sanguíneo, más espacio extracelular y cinco veces la fijación del esponjoso, por lo que
+  es positiva en las tres fases. Primer paso del bolo como variable gamma.
+- Vista plantar como en la clínica: dedos arriba y pie derecho del paciente a la izquierda de la pantalla.
+  Cuerpo entero anterior de frente y posterior desde atrás.
+- DICOM NM (dinámico de 30 × 2 s, dos estáticas y cuerpo entero), paciente SIM-OSEO-ICRP-01, raíz de UID
+  propia. Página local sin regiones ni tablas, con un marcador opcional de la lesión.
+
+**Publicación.** Código público; salida_osea/ y docs/icrp/ quedan fuera del repositorio por la licencia ICRP.
